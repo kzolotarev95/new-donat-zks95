@@ -25,7 +25,7 @@ def _absolute_url(path):
 @bp.get("/")
 def index():
     try:
-        repos = fetch_repositories(current_app.config["GITHUB_USERNAME"])
+        repos = fetch_repositories(current_app.config["GITHUB_USERNAME"], current_app.config["GITHUB_REPOS_URL"])
         github_error = None
     except Exception as exc:
         log.warning("GitHub API unavailable: %s", exc)
@@ -41,7 +41,7 @@ def about():
 @bp.get("/projects")
 def projects():
     try:
-        repos = fetch_repositories(current_app.config["GITHUB_USERNAME"])
+        repos = fetch_repositories(current_app.config["GITHUB_USERNAME"], current_app.config["GITHUB_REPOS_URL"])
         github_error = None
     except Exception:
         repos, github_error = [], "Репозитории временно недоступны"

@@ -1,19 +1,24 @@
 """GitHub public repository API client with a short cache."""
-from functools import lru_cache
+import time
 import requests
 
+_cache = {}
+_cache_ttl = 600
 
-@lru_cache(maxsize=1)
-def fetch_repositories(username):
+def fetch_repositories(username, endpoint=None):
+    cache_key = (username, endpoint or "")
+    cached = _cache.get(cache_key)
+    if cached and time.monotonic() - cached[0] < _cache_ttl:
+        return cached[1]
     response = requests.get(
-        f"https://api.github.com/users/{username}/repos",
+        endpoint or f"https://api.github.com/users/{username}/repos",
         params={"sort": "updated", "direction": "desc", "per_page": 12, "type": "owner"},
         headers={"Accept": "application/vnd.github+json", "User-Agent": "ZKS95-Developer"},
         timeout=8,
     )
     response.raise_for_status()
     repos = response.json()
-    return [
+    repositories = [
         {
             "name": repo["name"],
             "description": repo.get("description") or "Открытый проект ZKS95 Developer",
@@ -25,3 +30,5 @@ def fetch_repositories(username):
         }
         for repo in repos
     ]
+    _cache[cache_key] = (time.monotonic(), repositories)
+    return repositories
