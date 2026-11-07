@@ -42,7 +42,5 @@ def admin_required(view):
     def wrapped(*args, **kwargs):
         if not session.get("admin_user_id"):
             return redirect(url_for("admin.login", next=request.path))
-        if session.get("must_change_password") and request.endpoint not in {"admin.password", "admin.logout"}:
-            return redirect(url_for("admin.password", force=1))
         return view(*args, **kwargs)
     return wrapped

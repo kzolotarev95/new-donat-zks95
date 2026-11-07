@@ -2,10 +2,11 @@
 import json
 import logging
 import math
+import re
 from functools import wraps
 from flask import Blueprint, flash, redirect, render_template, request, session, url_for, current_app, jsonify
 from werkzeug.security import check_password_hash, generate_password_hash
-from .db import (count_payments, get_admin_user, get_admin_user_by_id, get_payment, get_db, list_payments, mark_admin_login, payment_stats, update_admin_password, update_payment)
+from .db import (count_payments, get_admin_user, get_admin_user_by_id, get_payment, get_db, list_payments, mark_admin_login, payment_stats, update_admin_account, update_admin_password, update_payment)
 from .payments import fetch_payment
 from .security import admin_required, csrf_token, require_csrf
 from .settings import get_runtime_setting, set_runtime_setting
@@ -43,7 +44,7 @@ def login_post():
     user = get_admin_user(username)
     if not user or not check_password_hash(user["password_hash"], password):
         flash("Неверный логин или пароль.", "error")
-        return render_template("admin/login.html", username=username), 401
+        return render_template("admin/login.html", username=username, recaptcha_site_key=recaptcha_site_key()), 401
     session.clear()
     session.permanent = True
     session["admin_user_id"] = user["id"]
@@ -127,8 +128,8 @@ def password():
         user = get_admin_user_by_id(session["admin_user_id"])
         if not user or not check_password_hash(user["password_hash"], current):
             flash("Текущий пароль неверен.", "error")
-        elif len(new) < 12:
-            flash("Новый пароль должен содержать минимум 12 символов.", "error")
+        elif len(new) < 6:
+            flash("Новый пароль должен содержать минимум 6 символов.", "error")
         elif new != repeat:
             flash("Пароли не совпадают.", "error")
         else:
@@ -136,7 +137,33 @@ def password():
             flash("Пароль изменён.", "success")
             session["must_change_password"] = False
             return redirect(url_for("admin.dashboard"))
-    return render_template("admin/password.html", force=request.args.get("force") == "1")
+    return render_template("admin/password.html", force=False)
+
+
+@admin_bp.route("/account", methods=["GET", "POST"])
+@admin_required
+def account():
+    user = get_admin_user_by_id(session["admin_user_id"])
+    if request.method == "POST":
+        current = request.form.get("current_password") or ""
+        username = (request.form.get("username") or "").strip()
+        new_password = request.form.get("new_password") or ""
+        repeat = request.form.get("repeat_password") or ""
+        if not user or not check_password_hash(user["password_hash"], current):
+            flash("Текущий пароль неверен.", "error")
+        elif not re.fullmatch(r"[A-Za-z0-9_.-]{3,64}", username):
+            flash("Логин: 3–64 символа, только латиница, цифры, точка, дефис или _.", "error")
+        elif new_password and (len(new_password) < 6 or new_password != repeat):
+            flash("Новый пароль должен быть не короче 6 символов и совпадать в обоих полях.", "error")
+        elif username != user["username"] and get_admin_user(username):
+            flash("Такой логин уже занят.", "error")
+        else:
+            update_admin_account(user["id"], username, generate_password_hash(new_password) if new_password else None)
+            session["admin_username"] = username
+            session["must_change_password"] = False
+            flash("Данные аккаунта сохранены.", "success")
+            return redirect(url_for("admin.account"))
+    return render_template("admin/account.html", user=user)
 
 
 @admin_bp.route("/settings", methods=["GET", "POST"])

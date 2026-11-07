@@ -135,6 +135,13 @@ def update_admin_password(user_id, password_hash, must_change_password=0):
     get_db().execute("UPDATE admin_users SET password_hash = ?, updated_at = ?, must_change_password = ? WHERE id = ?", (password_hash, _now(), must_change_password, user_id))
     get_db().commit()
 
+def update_admin_account(user_id, username, password_hash=None):
+    if password_hash:
+        get_db().execute("UPDATE admin_users SET username = ?, password_hash = ?, updated_at = ?, must_change_password = 0 WHERE id = ?", (username, password_hash, _now(), user_id))
+    else:
+        get_db().execute("UPDATE admin_users SET username = ?, updated_at = ? WHERE id = ?", (username, _now(), user_id))
+    get_db().commit()
+
 def mark_admin_login(user_id):
     get_db().execute("UPDATE admin_users SET last_login_at = ? WHERE id = ?", (_now(), user_id))
     get_db().commit()

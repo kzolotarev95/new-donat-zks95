@@ -31,3 +31,10 @@ def test_recaptcha_is_required_when_configured(app, client):
     response = client.post("/api/payments", json={"amount": "500"})
     assert response.status_code == 400
     assert "не робот" in response.get_json()["error"]
+
+def test_admin_login_renders_recaptcha_when_configured(app, client):
+    app.config["RECAPTCHA_SITE_KEY"] = "site-key"
+    response = client.get("/admin/login")
+    body = response.get_data(as_text=True)
+    assert "g-recaptcha" in body
+    assert "site-key" in body
