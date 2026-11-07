@@ -1,0 +1,23 @@
+[Unit]
+Description=ZKS95 Developer donation site
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=exec
+User=zks95
+Group=zks95
+WorkingDirectory=/opt/new-donat-zks95
+EnvironmentFile=/etc/new-donat-zks95/.env
+ExecStart=/opt/new-donat-zks95/.venv/bin/gunicorn --workers 2 --bind 127.0.0.1:8015 --access-logfile - --error-logfile - wsgi:app
+Restart=on-failure
+RestartSec=5
+PrivateTmp=true
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/new-donat-zks95
+ReadWritePaths=/var/log/new-donat-zks95
+
+[Install]
+WantedBy=multi-user.target
