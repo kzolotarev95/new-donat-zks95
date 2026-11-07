@@ -4,13 +4,13 @@ import hmac
 import json
 import logging
 import secrets
-import requests
 from urllib.parse import urljoin
 from flask import Blueprint, current_app, jsonify, redirect, render_template, request, url_for
 from .db import create_payment_record, get_payment, update_payment
 from .github import fetch_repositories
 from .payments import create_payment, fetch_payment, normalize_amount
 from .settings import get_runtime_setting
+from .captcha import site_key as recaptcha_site_key, verify as verify_recaptcha
 
 bp = Blueprint("site", __name__)
 log = logging.getLogger(__name__)
@@ -62,21 +62,7 @@ def support():
 
 @bp.route("/donate", methods=["GET"])
 def donate():
-    return render_template("donate.html", payment_error=None, recaptcha_site_key=get_runtime_setting("RECAPTCHA_SITE_KEY", current_app.config.get("RECAPTCHA_SITE_KEY", "")))
-
-
-def _verify_recaptcha(token):
-    secret = get_runtime_setting("RECAPTCHA_SECRET_KEY", current_app.config.get("RECAPTCHA_SECRET_KEY", ""))
-    if not secret:
-        return True
-    if not token:
-        return False
-    try:
-        response = requests.post("https://www.google.com/recaptcha/api/siteverify", data={"secret": secret, "response": token, "remoteip": request.remote_addr}, timeout=5)
-        return bool(response.json().get("success"))
-    except requests.RequestException:
-        log.exception("reCAPTCHA verification failed")
-        return False
+    return render_template("donate.html", payment_error=None, recaptcha_site_key=recaptcha_site_key())
 
 
 @bp.post("/api/payments")
@@ -84,7 +70,7 @@ def payments_api():
     data = request.get_json(silent=True) or request.form
     try:
         amount = normalize_amount(data.get("amount"))
-        if not _verify_recaptcha(data.get("g-recaptcha-response")):
+        if not verify_recaptcha(data.get("g-recaptcha-response")):
             return jsonify(error="Подтвердите, что вы не робот"), 400
         email = (data.get("email") or "").strip()[:254]
         message = (data.get("message") or "").strip()[:500]

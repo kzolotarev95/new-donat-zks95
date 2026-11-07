@@ -5,12 +5,14 @@ Wants=network-online.target
 
 [Service]
 Type=exec
+StartLimitIntervalSec=60
+StartLimitBurst=5
 User=zks95
 Group=zks95
 WorkingDirectory=/opt/new-donat-zks95
 EnvironmentFile=/etc/new-donat-zks95/.env
 ExecStart=/opt/new-donat-zks95/.venv/bin/gunicorn --workers 2 --bind 127.0.0.1:8015 --access-logfile - --error-logfile - wsgi:app
-Restart=on-failure
+Restart=always
 RestartSec=5
 PrivateTmp=true
 NoNewPrivileges=true

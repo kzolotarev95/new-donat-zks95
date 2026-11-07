@@ -9,6 +9,7 @@ from .db import (count_payments, get_admin_user, get_admin_user_by_id, get_payme
 from .payments import fetch_payment
 from .security import admin_required, csrf_token, require_csrf
 from .settings import get_runtime_setting, set_runtime_setting
+from .captcha import site_key as recaptcha_site_key, verify as verify_recaptcha
 
 log = logging.getLogger(__name__)
 admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
@@ -29,13 +30,16 @@ def protect_admin_posts():
 def login():
     if session.get("admin_user_id"):
         return redirect(url_for("admin.dashboard"))
-    return render_template("admin/login.html")
+    return render_template("admin/login.html", recaptcha_site_key=recaptcha_site_key())
 
 
 @admin_bp.post("/login")
 def login_post():
     username = (request.form.get("username") or "").strip()
     password = request.form.get("password") or ""
+    if not verify_recaptcha(request.form.get("g-recaptcha-response")):
+        flash("Подтвердите, что вы не робот.", "error")
+        return render_template("admin/login.html", username=username, recaptcha_site_key=recaptcha_site_key()), 400
     user = get_admin_user(username)
     if not user or not check_password_hash(user["password_hash"], password):
         flash("Неверный логин или пароль.", "error")
@@ -132,7 +136,7 @@ def password():
             flash("Пароль изменён.", "success")
             session["must_change_password"] = False
             return redirect(url_for("admin.dashboard"))
-    return render_template("admin/password.html")
+    return render_template("admin/password.html", force=request.args.get("force") == "1")
 
 
 @admin_bp.route("/settings", methods=["GET", "POST"])
