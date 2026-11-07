@@ -105,6 +105,12 @@ sudo /opt/new-donat-zks95/update.sh
 curl -fsSL "https://raw.githubusercontent.com/kzolotarev95/new-donat-zks95/main/vps/uninstall-vps.sh?v=$(date +%s)" | sudo sh
 ```
 
+Если провайдер кэширует старый `raw.githubusercontent.com`, используйте versioned wrapper:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/kzolotarev95/new-donat-zks95/main/vps/update-vps-2.sh | sudo sh
+```
+
 ```bash
 sudo /opt/new-donat-zks95/uninstall.sh
 ```
