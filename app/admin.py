@@ -3,10 +3,11 @@ import json
 import logging
 import math
 import re
+import sqlite3
 from functools import wraps
 from flask import Blueprint, flash, redirect, render_template, request, session, url_for, current_app, jsonify
 from werkzeug.security import check_password_hash, generate_password_hash
-from .db import (count_payments, get_admin_user, get_admin_user_by_id, get_payment, get_db, list_payments, mark_admin_login, payment_stats, update_admin_account, update_admin_password, update_payment)
+from .db import (DONOR_COLORS, count_payments, create_donor, delete_donor, get_admin_user, get_admin_user_by_id, get_payment, get_db, list_donors, list_payments, mark_admin_login, payment_stats, record_donor_payment, update_admin_account, update_admin_password, update_donor, update_payment)
 from .payments import fetch_payment
 from .security import admin_required, csrf_token, require_csrf
 from .settings import get_runtime_setting, set_runtime_setting
@@ -84,6 +85,57 @@ def payments():
     return render_template("admin/payments.html", payments=rows, page=page, pages=max(1, math.ceil(total / per_page)), total=total, status=status, query=query)
 
 
+def _donor_form_values():
+    nickname = (request.form.get("nickname") or "").strip()[:64]
+    color = (request.form.get("color") or "red").strip()
+    note = (request.form.get("note") or "").strip()[:120]
+    return nickname, color, note
+
+
+@admin_bp.get("/donors")
+@admin_required
+def donors():
+    return render_template("admin/donors.html", donors=list_donors(active_only=False), donor_colors=DONOR_COLORS)
+
+
+@admin_bp.post("/donors")
+@admin_required
+def create_donor_admin():
+    nickname, color, note = _donor_form_values()
+    if len(nickname) < 2 or any(char in "<>/\\" for char in nickname):
+        flash("Укажите корректный никнейм от 2 символов.", "error")
+    else:
+        try:
+            create_donor(nickname, color, note)
+            flash("Донатер добавлен.", "success")
+        except sqlite3.IntegrityError:
+            flash("Такой никнейм уже есть в списке.", "error")
+    return redirect(url_for("admin.donors"))
+
+
+@admin_bp.post("/donors/<int:donor_id>")
+@admin_required
+def edit_donor(donor_id):
+    nickname, color, note = _donor_form_values()
+    if len(nickname) < 2 or any(char in "<>/\\" for char in nickname):
+        flash("Укажите корректный никнейм от 2 символов.", "error")
+    else:
+        try:
+            update_donor(donor_id, nickname, color, note, request.form.get("is_active") == "1")
+            flash("Данные донатера обновлены.", "success")
+        except sqlite3.IntegrityError:
+            flash("Такой никнейм уже есть в списке.", "error")
+    return redirect(url_for("admin.donors"))
+
+
+@admin_bp.post("/donors/<int:donor_id>/delete")
+@admin_required
+def remove_donor(donor_id):
+    delete_donor(donor_id)
+    flash("Донатер удалён.", "success")
+    return redirect(url_for("admin.donors"))
+
+
 @admin_bp.post("/payments/<payment_id>/refresh")
 @admin_required
 def refresh_payment(payment_id):
@@ -96,7 +148,10 @@ def refresh_payment(payment_id):
         if str(confirmed.amount.value) != str(record["amount"]) or confirmed.amount.currency != record["currency"]:
             flash("Проверка отклонена: сумма или валюта не совпадает.", "error")
         else:
+            was_paid = record["status"] == "succeeded"
             update_payment(payment_id, confirmed.status, json.loads(confirmed.json()), confirmed.status == "succeeded")
+            if confirmed.status == "succeeded" and not was_paid:
+                record_donor_payment(record["customer_nickname"], record["amount"])
             flash(f"Статус обновлён: {confirmed.status}.", "success")
     except Exception:
         log.exception("Admin payment refresh failed")

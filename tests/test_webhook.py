@@ -7,7 +7,7 @@ def test_webhook_rechecks_payment(monkeypatch, app, client):
         create_payment_record({
             "payment_id": "pay-1", "idempotency_key": "idem-1",
             "status": "pending", "amount": "500.00", "currency": "RUB",
-            "description": "Support", "payload": {},
+            "description": "Support", "customer_nickname": "tester", "payload": {},
         })
     class Payment:
         id = "pay-1"
@@ -21,3 +21,5 @@ def test_webhook_rechecks_payment(monkeypatch, app, client):
     with app.app_context():
         from app.db import get_payment
         assert get_payment("pay-1")["status"] == "succeeded"
+        from app.db import list_donors
+        assert list_donors()[0]["nickname"] == "tester"

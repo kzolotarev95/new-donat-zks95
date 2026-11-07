@@ -1,0 +1,34 @@
+{% extends "admin/base.html" %}
+{% block title %}Донатеры — ZKS95 Admin{% endblock %}
+{% block content %}
+<div class="admin-title"><div><p class="eyebrow">Community / Supporters</p><h1>Донатеры.</h1></div><span class="admin-user">{{ donors|length }} записей</span></div>
+<section class="admin-panel donor-create-panel">
+  <div class="panel-head"><h2>Добавить вручную</h2><span class="muted">Автоматические донатеры появятся после подтверждённой оплаты.</span></div>
+  <form class="donor-create-form" method="post" action="{{ url_for('admin.create_donor_admin') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label>Никнейм<input name="nickname" maxlength="64" placeholder="например, zks95" required></label>
+    <label>Цвет<select name="color">{% for value,label in donor_colors.items() %}<option value="{{ value }}">{{ label }}</option>{% endfor %}</select></label>
+    <label>Подпись <span class="optional">необязательно</span><input name="note" maxlength="120" placeholder="Поддержал проект"></label>
+    <button class="button button-gold" type="submit">Добавить</button>
+  </form>
+</section>
+<section class="admin-panel">
+  <div class="panel-head"><h2>Список донатеров</h2><span class="muted">Цвет ника отображается на Donate</span></div>
+  <div class="donor-admin-list">
+  {% for donor in donors %}
+    <form class="donor-admin-row" method="post" action="{{ url_for('admin.edit_donor', donor_id=donor.id) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="donor-admin-name"><span class="donor-swatch donor-{{ donor.color }}"></span><strong>{{ donor.nickname }}</strong><small>{{ donor.donations_count }} платеж(ей) · {{ donor.total_amount }} ₽</small></div>
+      <input name="nickname" value="{{ donor.nickname }}" maxlength="64" required>
+      <select name="color">{% for value,label in donor_colors.items() %}<option value="{{ value }}" {% if donor.color == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+      <input name="note" value="{{ donor.note }}" maxlength="120" placeholder="Подпись">
+      <label class="donor-active"><input type="checkbox" name="is_active" value="1" {% if donor.is_active %}checked{% endif %}> Показывать</label>
+      <button class="button button-ghost" type="submit">Сохранить</button>
+      <button class="button donor-delete" type="submit" formaction="{{ url_for('admin.remove_donor', donor_id=donor.id) }}" formmethod="post" onclick="return confirm('Удалить этого донатера?')">Удалить</button>
+    </form>
+  {% else %}
+    <p class="muted">Пока нет донатеров. Добавьте первого вручную или дождитесь подтверждённого платежа.</p>
+  {% endfor %}
+  </div>
+</section>
+{% endblock %}

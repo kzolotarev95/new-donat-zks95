@@ -1,5 +1,6 @@
 """Small SQLite data layer with explicit schema and transaction boundaries."""
 import json
+import hashlib
 import os
 import sqlite3
 from datetime import datetime, timezone
@@ -16,6 +17,7 @@ CREATE TABLE IF NOT EXISTS payments (
     currency TEXT NOT NULL,
     description TEXT NOT NULL,
     customer_email TEXT,
+    customer_nickname TEXT,
     message TEXT,
     payload_json TEXT NOT NULL DEFAULT '{}',
     created_at TEXT NOT NULL,
@@ -39,6 +41,19 @@ CREATE TABLE IF NOT EXISTS app_settings (
     is_secret INTEGER NOT NULL DEFAULT 0,
     updated_at TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS donors (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    nickname TEXT NOT NULL UNIQUE COLLATE NOCASE,
+    color TEXT NOT NULL DEFAULT 'red',
+    note TEXT NOT NULL DEFAULT '',
+    total_amount TEXT NOT NULL DEFAULT '0',
+    donations_count INTEGER NOT NULL DEFAULT 0,
+    is_active INTEGER NOT NULL DEFAULT 1,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    last_donated_at TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_donors_active ON donors(is_active, updated_at);
 """
 
 
@@ -63,6 +78,10 @@ def init_db():
     columns = {row["name"] for row in db.execute("PRAGMA table_info(admin_users)").fetchall()}
     if "must_change_password" not in columns:
         db.execute("ALTER TABLE admin_users ADD COLUMN must_change_password INTEGER NOT NULL DEFAULT 0")
+    payment_columns = {row["name"] for row in db.execute("PRAGMA table_info(payments)").fetchall()}
+    if "customer_nickname" not in payment_columns:
+        db.execute("ALTER TABLE payments ADD COLUMN customer_nickname TEXT")
+    db.execute("CREATE INDEX IF NOT EXISTS idx_payments_nickname ON payments(customer_nickname)")
     db.commit()
     _ensure_admin_from_env()
 
@@ -85,12 +104,12 @@ def create_payment_record(payment):
     db.execute(
         """INSERT INTO payments
         (payment_id, idempotency_key, status, amount, currency, description,
-         customer_email, message, payload_json, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+         customer_email, customer_nickname, message, payload_json, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
         (
             payment["payment_id"], payment["idempotency_key"], payment["status"],
             payment["amount"], payment["currency"], payment["description"],
-            payment.get("customer_email"), payment.get("message"),
+            payment.get("customer_email"), payment.get("customer_nickname"), payment.get("message"),
             json.dumps(payment.get("payload", {}), ensure_ascii=False), now, now,
         ),
     )
@@ -108,6 +127,73 @@ def update_payment(payment_id, status, payload=None, paid=False):
         """UPDATE payments SET status = ?, payload_json = ?, updated_at = ?, paid_at =
         CASE WHEN ? THEN COALESCE(paid_at, ?) ELSE paid_at END WHERE payment_id = ?""",
         (status, json.dumps(payload or {}, ensure_ascii=False), now, paid, now, payment_id),
+    )
+    db.commit()
+
+
+DONOR_COLORS = {
+    "red": "Красный",
+    "orange": "Оранжевый",
+    "gold": "Золотой",
+    "blue": "Синий",
+    "green": "Зелёный",
+    "violet": "Фиолетовый",
+}
+
+
+def list_donors(active_only=True, limit=60):
+    where = "WHERE is_active = 1" if active_only else ""
+    return get_db().execute(
+        f"SELECT * FROM donors {where} ORDER BY updated_at DESC, id DESC LIMIT ?", (limit,)
+    ).fetchall()
+
+
+def create_donor(nickname, color="red", note=""):
+    if color not in DONOR_COLORS:
+        color = "red"
+    now = _now()
+    cursor = get_db().execute(
+        "INSERT INTO donors(nickname, color, note, created_at, updated_at) VALUES (?, ?, ?, ?, ?)",
+        (nickname, color, note, now, now),
+    )
+    get_db().commit()
+    return cursor.lastrowid
+
+
+def update_donor(donor_id, nickname, color, note, is_active=1):
+    if color not in DONOR_COLORS:
+        color = "red"
+    get_db().execute(
+        "UPDATE donors SET nickname = ?, color = ?, note = ?, is_active = ?, updated_at = ? WHERE id = ?",
+        (nickname, color, note, int(bool(is_active)), _now(), donor_id),
+    )
+    get_db().commit()
+
+
+def delete_donor(donor_id):
+    get_db().execute("DELETE FROM donors WHERE id = ?", (donor_id,))
+    get_db().commit()
+
+
+def record_donor_payment(nickname, amount):
+    """Create or update the public donor card after a confirmed payment."""
+    nickname = (nickname or "").strip()[:64]
+    if not nickname:
+        return
+    color_index = int(hashlib.sha256(nickname.lower().encode("utf-8")).hexdigest()[:8], 16)
+    color = tuple(DONOR_COLORS)[color_index % len(DONOR_COLORS)]
+    now = _now()
+    db = get_db()
+    db.execute(
+        """INSERT INTO donors(nickname, color, note, total_amount, donations_count,
+           is_active, created_at, updated_at, last_donated_at)
+           VALUES (?, ?, '', ?, 1, 1, ?, ?, ?)
+           ON CONFLICT(nickname) DO UPDATE SET
+             total_amount = CAST(total_amount AS REAL) + CAST(excluded.total_amount AS REAL),
+             donations_count = donations_count + 1,
+             updated_at = excluded.updated_at,
+             last_donated_at = excluded.last_donated_at""",
+        (nickname, color, str(amount), now, now, now),
     )
     db.commit()
 
@@ -159,7 +245,7 @@ def list_payments(limit=30, offset=0, status="", query=""):
     if status:
         clauses.append("status = ?"); params.append(status)
     if query:
-        clauses.append("(payment_id LIKE ? OR customer_email LIKE ?)"); params.extend([f"%{query}%", f"%{query}%"])
+        clauses.append("(payment_id LIKE ? OR customer_email LIKE ? OR customer_nickname LIKE ?)"); params.extend([f"%{query}%", f"%{query}%", f"%{query}%"])
     where = " WHERE " + " AND ".join(clauses) if clauses else ""
     params.extend([limit, offset])
     return get_db().execute(f"SELECT * FROM payments{where} ORDER BY created_at DESC LIMIT ? OFFSET ?", params).fetchall()
@@ -169,6 +255,6 @@ def count_payments(status="", query=""):
     if status:
         clauses.append("status = ?"); params.append(status)
     if query:
-        clauses.append("(payment_id LIKE ? OR customer_email LIKE ?)"); params.extend([f"%{query}%", f"%{query}%"])
+        clauses.append("(payment_id LIKE ? OR customer_email LIKE ? OR customer_nickname LIKE ?)"); params.extend([f"%{query}%", f"%{query}%", f"%{query}%"])
     where = " WHERE " + " AND ".join(clauses) if clauses else ""
     return get_db().execute(f"SELECT COUNT(*) AS n FROM payments{where}", params).fetchone()["n"]

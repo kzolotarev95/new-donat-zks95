@@ -5,7 +5,7 @@
   <div class="donate-copy">
     <p class="eyebrow">Donate / ЮKassa</p>
     <h1>Поддержать<br><em>разработку.</em></h1>
-    <p>Выберите сумму — платёж откроется на защищённой странице ЮKassa и вернёт вас обратно после оплаты.</p>
+    <p>Каждый перевод помогает поддерживать open-source проекты, серверы и новые релизы.</p>
 
     <div class="payment-banner" aria-label="Способы оплаты">
       <div class="payment-banner-top"><span class="signal-dot"></span><strong>Оплата через ЮKassa</strong><span class="secure-label">SSL · 3-D Secure</span></div>
@@ -26,11 +26,17 @@
     <div class="donate-form-head"><div><span class="form-kicker">01 / Сумма</span><h2>Выберите вклад</h2></div><span class="form-lock">Защищено</span></div>
     <label>Сумма поддержки<div class="amount-input"><input type="number" name="amount" min="100" step="1" value="500" required><span>₽</span></div></label>
     <div class="quick-amounts" role="group" aria-label="Быстрый выбор суммы"><button type="button" data-amount="250">250 ₽</button><button type="button" data-amount="500" class="selected">500 ₽</button><button type="button" data-amount="1000">1 000 ₽</button><button type="button" data-amount="2500">2 500 ₽</button></div>
-    <label>Email <span class="optional">необязательно</span><input type="email" name="email" placeholder="you@example.com"></label>
+    <label>Никнейм <span class="optional">обязательно</span><input type="text" name="nickname" maxlength="64" minlength="2" placeholder="например, zks95" required></label>
     <label>Сообщение <span class="optional">необязательно</span><textarea name="message" rows="3" maxlength="500" placeholder="Пара слов для автора"></textarea></label>
     <button class="button button-gold button-full pay-button" type="submit"><span class="pay-icon">↗</span><span>Перейти к оплате</span><span class="pay-arrow">→</span></button>
     <div class="form-status" role="status" aria-live="polite"></div>
     <small class="form-legal">Нажимая кнопку, вы соглашаетесь с обработкой данных для проведения платежа.</small>
   </form>
+</section>
+<section class="donor-wall shell" aria-labelledby="donors-title">
+  <div class="section-head"><div><p class="eyebrow">Community / Supporters</p><h2 id="donors-title">Спасибо тем,<br><em>кто рядом.</em></h2></div><span class="donor-wall-caption">Ники появляются после подтверждения платежа</span></div>
+  <div class="donor-grid">
+    {% for donor in donors %}<article class="donor-card donor-{{ donor.color }}"><span class="donor-avatar">{{ donor.nickname[:1]|upper }}</span><div><strong>{{ donor.nickname }}</strong><small>{{ donor.note or 'Поддержал разработку' }}</small></div><span class="donor-check">✓</span></article>{% else %}<div class="empty-state">Станьте первым донатером — ваше имя появится здесь после оплаты.</div>{% endfor %}
+  </div>
 </section>
 {% endblock %}

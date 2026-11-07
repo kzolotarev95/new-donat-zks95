@@ -6,7 +6,7 @@ import logging
 import secrets
 from urllib.parse import urljoin
 from flask import Blueprint, current_app, jsonify, redirect, render_template, request, url_for
-from .db import create_payment_record, get_payment, update_payment
+from .db import create_payment_record, get_payment, list_donors, record_donor_payment, update_payment
 from .github import fetch_repositories
 from .payments import create_payment, fetch_payment, normalize_amount
 from .settings import get_runtime_setting
@@ -25,13 +25,7 @@ def _absolute_url(path):
 
 @bp.get("/")
 def index():
-    try:
-        repos = fetch_repositories(current_app.config["GITHUB_USERNAME"], current_app.config["GITHUB_REPOS_URL"])
-        github_error = None
-    except Exception as exc:
-        log.warning("GitHub API unavailable: %s", exc)
-        repos, github_error = [], "Репозитории временно недоступны"
-    return render_template("index.html", repos=repos, github_error=github_error)
+    return redirect(url_for("site.donate"))
 
 
 @bp.get("/about")
@@ -71,7 +65,7 @@ def support():
 
 @bp.route("/donate", methods=["GET"])
 def donate():
-    return render_template("donate.html", payment_error=None)
+    return render_template("donate.html", payment_error=None, donors=list_donors())
 
 
 @bp.post("/api/payments")
@@ -79,10 +73,12 @@ def payments_api():
     data = request.get_json(silent=True) or request.form
     try:
         amount = normalize_amount(data.get("amount"))
-        email = (data.get("email") or "").strip()[:254]
+        nickname = (data.get("nickname") or "Аноним").strip()[:64]
         message = (data.get("message") or "").strip()[:500]
-        if email and ("@" not in email or " " in email):
-            raise ValueError("Проверьте email")
+        if len(nickname) < 2:
+            raise ValueError("Укажите никнейм")
+        if any(ord(char) < 32 for char in nickname) or any(char in "<>/\\" for char in nickname):
+            raise ValueError("Никнейм содержит недопустимые символы")
         shop_id = get_runtime_setting("YOOKASSA_SHOP_ID", current_app.config["YOOKASSA_SHOP_ID"])
         secret_key = get_runtime_setting("YOOKASSA_SECRET_KEY", current_app.config["YOOKASSA_SECRET_KEY"])
         if not shop_id or not secret_key:
@@ -91,14 +87,14 @@ def payments_api():
         return_url = get_runtime_setting("YOOKASSA_RETURN_URL", current_app.config["YOOKASSA_RETURN_URL"])
         result, idempotency_key = create_payment(
             amount, description, return_url or _absolute_url("/payment/success"),
-            {"email": email, "message": message},
+            {"nickname": nickname, "message": message},
         )
         payment_id = result.id
         create_payment_record({
             "payment_id": payment_id, "idempotency_key": idempotency_key,
             "status": result.status, "amount": str(result.amount.value),
             "currency": result.amount.currency, "description": description,
-            "customer_email": email, "message": message, "payload": result.json(),
+            "customer_nickname": nickname, "message": message, "payload": result.json(),
         })
         return jsonify(payment_id=payment_id, confirmation_url=result.confirmation.confirmation_url)
     except ValueError as exc:
@@ -152,7 +148,10 @@ def yookassa_webhook():
         return jsonify(error="payment verification failed"), 400
     status = confirmed.status
     paid = status == "succeeded"
+    was_paid = record["status"] == "succeeded"
     update_payment(payment_id, status, json.loads(confirmed.json()), paid=paid)
+    if paid and not was_paid:
+        record_donor_payment(record["customer_nickname"], record["amount"])
     return jsonify(ok=True)
 
 

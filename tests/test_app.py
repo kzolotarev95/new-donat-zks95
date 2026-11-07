@@ -3,6 +3,16 @@ def test_healthcheck(client):
     assert response.status_code == 200
     assert response.get_json()["status"] == "ok"
 
+def test_root_opens_donate(client):
+    response = client.get("/", follow_redirects=False)
+    assert response.status_code == 302
+    assert response.headers["Location"].endswith("/donate")
+
+def test_donate_page_contains_donor_wall(client):
+    response = client.get("/donate")
+    assert response.status_code == 200
+    assert "donor-wall" in response.get_data(as_text=True)
+
 def test_missing_payment_config_is_explicit(client):
     response = client.post("/api/payments", json={"amount": "500"})
     assert response.status_code == 503
@@ -25,6 +35,14 @@ def test_admin_login_and_dashboard(client):
 
 def test_admin_requires_authentication(client):
     assert client.get("/admin/payments").status_code == 302
+
+def test_admin_donors_page(client):
+    login = client.get("/admin/login")
+    token = login.get_data(as_text=True).split('name="csrf_token" value="')[1].split('"', 1)[0]
+    client.post("/admin/login", data={"csrf_token": token, "username": "admin", "password": "correct horse battery staple"})
+    response = client.get("/admin/donors")
+    assert response.status_code == 200
+    assert "Добавить вручную" in response.get_data(as_text=True)
 
 def test_donate_does_not_require_recaptcha(app, client):
     app.config["RECAPTCHA_SECRET_KEY"] = "captcha-secret"
