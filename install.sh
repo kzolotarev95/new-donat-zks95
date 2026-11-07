@@ -71,7 +71,7 @@ PAYMENT_MAX_AMOUNT=1000000
 PAYMENT_CURRENCY=RUB
 EOF
   chown root:"${APP_USER}" "${ETC_DIR}/.env"
-  chmod 0640 "${ETC_DIR}/.env"
+  chmod 0600 "${ETC_DIR}/.env"
 else
   log "Сохраняю существующий ${ETC_DIR}/.env"
 fi
