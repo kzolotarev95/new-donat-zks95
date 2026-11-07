@@ -12,6 +12,7 @@ def test_webhook_rechecks_payment(monkeypatch, app, client):
     class Payment:
         id = "pay-1"
         status = "succeeded"
+        amount = SimpleNamespace(value="500.00", currency="RUB")
         def json(self):
             return json.dumps({"id": self.id, "status": self.status})
     monkeypatch.setattr("app.routes.fetch_payment", lambda _payment_id: Payment())

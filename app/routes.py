@@ -132,6 +132,10 @@ def yookassa_webhook():
     if record is None:
         log.warning("Ignoring webhook for unknown payment %s", payment_id)
         return jsonify(ok=True)
+    confirmed_amount = getattr(confirmed, "amount", None)
+    if confirmed_amount is None or str(confirmed_amount.value) != str(record["amount"]) or confirmed_amount.currency != record["currency"]:
+        log.error("Payment amount mismatch for %s", payment_id)
+        return jsonify(error="payment verification failed"), 400
     status = confirmed.status
     paid = status == "succeeded"
     update_payment(payment_id, status, json.loads(confirmed.json()), paid=paid)
