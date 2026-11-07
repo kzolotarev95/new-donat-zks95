@@ -30,7 +30,8 @@ CREATE TABLE IF NOT EXISTS admin_users (
     password_hash TEXT NOT NULL,
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL,
-    last_login_at TEXT
+    last_login_at TEXT,
+    must_change_password INTEGER NOT NULL DEFAULT 0
 );
 CREATE TABLE IF NOT EXISTS app_settings (
     key TEXT PRIMARY KEY,
@@ -59,6 +60,9 @@ def get_db():
 def init_db():
     db = get_db()
     db.executescript(SCHEMA)
+    columns = {row["name"] for row in db.execute("PRAGMA table_info(admin_users)").fetchall()}
+    if "must_change_password" not in columns:
+        db.execute("ALTER TABLE admin_users ADD COLUMN must_change_password INTEGER NOT NULL DEFAULT 0")
     db.commit()
     _ensure_admin_from_env()
 
@@ -118,7 +122,7 @@ def _ensure_admin_from_env():
     if get_db().execute("SELECT 1 FROM admin_users LIMIT 1").fetchone():
         return
     now = _now()
-    get_db().execute("INSERT INTO admin_users(username, password_hash, created_at, updated_at) VALUES (?, ?, ?, ?)", (username, generate_password_hash(password), now, now))
+    get_db().execute("INSERT INTO admin_users(username, password_hash, created_at, updated_at, must_change_password) VALUES (?, ?, ?, ?, ?)", (username, generate_password_hash(password), now, now, int(password == "admin")))
     get_db().commit()
 
 def get_admin_user(username):
@@ -127,8 +131,8 @@ def get_admin_user(username):
 def get_admin_user_by_id(user_id):
     return get_db().execute("SELECT * FROM admin_users WHERE id = ?", (user_id,)).fetchone()
 
-def update_admin_password(user_id, password_hash):
-    get_db().execute("UPDATE admin_users SET password_hash = ?, updated_at = ? WHERE id = ?", (password_hash, _now(), user_id))
+def update_admin_password(user_id, password_hash, must_change_password=0):
+    get_db().execute("UPDATE admin_users SET password_hash = ?, updated_at = ?, must_change_password = ? WHERE id = ?", (password_hash, _now(), must_change_password, user_id))
     get_db().commit()
 
 def mark_admin_login(user_id):

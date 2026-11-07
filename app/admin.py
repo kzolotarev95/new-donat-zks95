@@ -44,6 +44,7 @@ def login_post():
     session.permanent = True
     session["admin_user_id"] = user["id"]
     session["admin_username"] = user["username"]
+    session["must_change_password"] = bool(user["must_change_password"])
     session["_csrf_token"] = csrf_token()
     mark_admin_login(user["id"])
     return redirect(request.args.get("next") or url_for("admin.dashboard"))
@@ -127,8 +128,9 @@ def password():
         elif new != repeat:
             flash("Пароли не совпадают.", "error")
         else:
-            update_admin_password(user["id"], generate_password_hash(new))
+            update_admin_password(user["id"], generate_password_hash(new), 0)
             flash("Пароль изменён.", "success")
+            session["must_change_password"] = False
             return redirect(url_for("admin.dashboard"))
     return render_template("admin/password.html")
 

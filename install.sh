@@ -101,11 +101,7 @@ DB_PATH="$(awk -F= '/^DATABASE_PATH=/{print substr($0, index($0,$2))}' "${ETC_DI
 runuser -u "${APP_USER:-zks95}" -- env DATABASE_PATH="${DB_PATH}" "${APP_DIR}/.venv/bin/python" -c 'from app import create_app; app=create_app(); print("database ready")'
 ADMIN_COUNT="$(runuser -u "${APP_USER}" -- env DATABASE_PATH="${DB_PATH}" "${APP_DIR}/.venv/bin/python" -c 'from app import create_app; from app.db import get_db; app=create_app(); print(get_db().execute("SELECT COUNT(*) FROM admin_users").fetchone()[0])')"
 if [[ "${ADMIN_COUNT}" == "0" ]]; then
-  read -r -p "Логин админ-панели [admin]: " ADMIN_SETUP_USER
-  ADMIN_SETUP_USER="${ADMIN_SETUP_USER:-admin}"
-  read -r -s -p "Пароль админ-панели (12+ символов): " ADMIN_SETUP_PASSWORD; printf '\n'
-  [[ "${#ADMIN_SETUP_PASSWORD}" -ge 12 ]] || fatal "Пароль админ-панели должен содержать минимум 12 символов."
-  runuser -u "${APP_USER}" -- env DATABASE_PATH="${DB_PATH}" ADMIN_USERNAME="${ADMIN_SETUP_USER}" ADMIN_PASSWORD="${ADMIN_SETUP_PASSWORD}" "${APP_DIR}/.venv/bin/python" -c 'from app import create_app; create_app(); print("admin ready")'
+  runuser -u "${APP_USER}" -- env DATABASE_PATH="${DB_PATH}" "${APP_DIR}/.venv/bin/python" "${APP_DIR}/scripts/create_admin.py" --default
 fi
 
 log "Устанавливаю systemd service"

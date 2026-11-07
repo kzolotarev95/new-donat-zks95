@@ -21,6 +21,12 @@ Production-ready персональный портал разработчика 
 
 ## Быстрая установка на VPS
 
+Однострочная установка:
+
+```bash
+curl -fsSL "https://raw.githubusercontent.com/kzolotarev95/new-donat-zks95/main/vps/install-vps.sh?v=$(date +%s)" | sudo sh
+```
+
 ```bash
 git clone https://github.com/kzolotarev95/new-donat-zks95.git
 cd new-donat-zks95
@@ -65,12 +71,12 @@ YOOKASSA_WEBHOOK_URL=https://donate.example.com/webhooks/yookassa
 
 ## Админ-панель
 
-После установки панель доступна по адресу `https://ваш-домен/admin`. При первом запуске установщик создаёт администратора и спрашивает логин и пароль (минимум 12 символов). Если база уже была создана до добавления панели, создайте или сбросьте администратора из SSH:
+После установки панель доступна по адресу `https://ваш-домен/admin`. Временные данные первого входа: `admin / admin`. После входа панель принудительно попросит сменить пароль. Если база уже была создана до добавления панели, восстановите временный вход из SSH:
 
 ```bash
 sudo -u zks95 env DATABASE_PATH=/var/lib/new-donat-zks95/site.db \
   /opt/new-donat-zks95/.venv/bin/python \
-  /opt/new-donat-zks95/scripts/create_admin.py
+  /opt/new-donat-zks95/scripts/create_admin.py --default
 ```
 
 В панели доступны обзор, список транзакций с фильтрами, детализация payload YooKassa, ручная перепроверка статуса, смена пароля и настройки YooKassa/reCAPTCHA. Секретные значения YooKassa и Google сохраняются в SQLite зашифрованными ключом `APP_SECRET_KEY` и не показываются обратно.
@@ -79,6 +85,12 @@ sudo -u zks95 env DATABASE_PATH=/var/lib/new-donat-zks95/site.db \
 
 ## Обновление и откат
 
+Однострочное обновление:
+
+```bash
+curl -fsSL "https://raw.githubusercontent.com/kzolotarev95/new-donat-zks95/main/vps/update-vps.sh?v=$(date +%s)" | sudo sh
+```
+
 ```bash
 sudo /opt/new-donat-zks95/update.sh
 ```
@@ -86,6 +98,12 @@ sudo /opt/new-donat-zks95/update.sh
 Скрипт делает `git fetch`, проверяет новые коммиты, сохраняет код/базу/.env, выполняет fast-forward, обновляет зависимости, инициализирует схему, перезапускает systemd и проверяет `/healthz`. При ошибке возвращает предыдущий Git revision и перезапускает сервис. Пользовательские настройки и база не трогаются.
 
 ## Удаление
+
+Однострочное удаление:
+
+```bash
+curl -fsSL "https://raw.githubusercontent.com/kzolotarev95/new-donat-zks95/main/vps/uninstall-vps.sh?v=$(date +%s)" | sudo sh
+```
 
 ```bash
 sudo /opt/new-donat-zks95/uninstall.sh
