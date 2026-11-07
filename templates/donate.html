@@ -1,1 +1,36 @@
-{% extends "base.html" %}{% block title %}Donate — ZKS95 Developer{% endblock %}{% block content %}<section class="donate-layout shell"><div class="donate-copy"><p class="eyebrow">Donate / ЮKassa</p><h1>Ваша поддержка<br><em>имеет значение.</em></h1><p>Безопасный перевод через ЮKassa. После оплаты вы вернётесь на эту страницу.</p><div class="donate-note"><span>◎</span><p>Минимальная сумма — 100 ₽.<br>Платёж защищён и обрабатывается ЮKassa.</p></div></div><form class="donate-form" id="donate-form"><label>Сумма, ₽<div class="amount-input"><input type="number" name="amount" min="100" step="1" value="500" required><span>₽</span></div></label><div class="quick-amounts"><button type="button" data-amount="250">250 ₽</button><button type="button" data-amount="500" class="selected">500 ₽</button><button type="button" data-amount="1000">1 000 ₽</button><button type="button" data-amount="2500">2 500 ₽</button></div><label>Email <span class="optional">необязательно</span><input type="email" name="email" placeholder="you@example.com"></label><label>Сообщение <span class="optional">необязательно</span><textarea name="message" rows="3" maxlength="500" placeholder="Пара слов для автора"></textarea></label><button class="button button-gold button-full" type="submit">Перейти к оплате <span>↗</span></button><div class="form-status" role="status" aria-live="polite"></div><small class="form-legal">Нажимая кнопку, вы соглашаетесь с обработкой данных для проведения платежа.</small></form></section>{% endblock %}
+{% extends "base.html" %}
+{% block title %}Donate — ZKS95 Developer{% endblock %}
+{% block content %}
+<section class="donate-layout donate-page shell">
+  <div class="donate-copy">
+    <p class="eyebrow">Donate / ЮKassa</p>
+    <h1>Поддержать<br><em>разработку.</em></h1>
+    <p>Выберите сумму — платёж откроется на защищённой странице ЮKassa и вернёт вас обратно после оплаты.</p>
+
+    <div class="payment-banner" aria-label="Способы оплаты">
+      <div class="payment-banner-top"><span class="signal-dot"></span><strong>Оплата через ЮKassa</strong><span class="secure-label">SSL · 3-D Secure</span></div>
+      <div class="payment-banner-title">Банковские способы оплаты</div>
+      <div class="bank-list">
+        <span class="bank-chip"><b class="bank-mark bank-t">T</b> Т-Банк</span>
+        <span class="bank-chip"><b class="bank-mark bank-s">С</b> Сбер</span>
+        <span class="bank-chip"><b class="bank-mark bank-v">V</b> ВТБ</span>
+        <span class="bank-chip"><b class="bank-mark bank-a">A</b> Альфа</span>
+      </div>
+      <div class="payment-banner-foot">После нажатия кнопки вы перейдёте к выбору способа оплаты.</div>
+    </div>
+
+    <div class="donate-note"><span>✓</span><p>Минимальная сумма — 100 ₽.<br>Данные карты остаются у ЮKassa.</p></div>
+  </div>
+
+  <form class="donate-form" id="donate-form">
+    <div class="donate-form-head"><div><span class="form-kicker">01 / Сумма</span><h2>Выберите вклад</h2></div><span class="form-lock">Защищено</span></div>
+    <label>Сумма поддержки<div class="amount-input"><input type="number" name="amount" min="100" step="1" value="500" required><span>₽</span></div></label>
+    <div class="quick-amounts" role="group" aria-label="Быстрый выбор суммы"><button type="button" data-amount="250">250 ₽</button><button type="button" data-amount="500" class="selected">500 ₽</button><button type="button" data-amount="1000">1 000 ₽</button><button type="button" data-amount="2500">2 500 ₽</button></div>
+    <label>Email <span class="optional">необязательно</span><input type="email" name="email" placeholder="you@example.com"></label>
+    <label>Сообщение <span class="optional">необязательно</span><textarea name="message" rows="3" maxlength="500" placeholder="Пара слов для автора"></textarea></label>
+    <button class="button button-gold button-full pay-button" type="submit"><span class="pay-icon">↗</span><span>Перейти к оплате</span><span class="pay-arrow">→</span></button>
+    <div class="form-status" role="status" aria-live="polite"></div>
+    <small class="form-legal">Нажимая кнопку, вы соглашаетесь с обработкой данных для проведения платежа.</small>
+  </form>
+</section>
+{% endblock %}
