@@ -34,6 +34,16 @@ read -r -p "Email для Certbot (если HTTPS включён, можно ос
 
 log "Устанавливаю системные зависимости"
 export DEBIAN_FRONTEND=noninteractive
+WAITED=0
+while fuser /var/lib/dpkg/lock-frontend /var/lib/dpkg/lock >/dev/null 2>&1; do
+  WAITED=$((WAITED + 1))
+  if (( WAITED > 60 )); then
+    fatal "Системный пакетный менеджер занят больше 5 минут. Проверьте unattended-upgrades и повторите."
+  fi
+  log "Ожидаю завершения фонового обновления Ubuntu (${WAITED}/60)"
+  sleep 5
+done
+dpkg --configure -a
 apt-get update
 apt-get install -y python3 python3-venv python3-pip git nginx curl ca-certificates rsync sqlite3
 if [[ "${SETUP_SSL,,}" == "y" || "${SETUP_SSL,,}" == "yes" ]]; then
@@ -46,6 +56,7 @@ if ! id -u "${APP_USER}" >/dev/null 2>&1; then
   CREATED_APP_USER=1
 fi
 install -d -o "${APP_USER}" -g "${APP_USER}" -m 0755 "${APP_DIR}" "${DATA_DIR}" "${BACKUP_DIR}"
+install -d -o "${APP_USER}" -g "${APP_USER}" -m 0755 "/var/log/${APP_NAME}"
 install -d -o root -g root -m 0755 "${ETC_DIR}"
 if [[ "${CREATED_APP_USER}" -eq 1 ]]; then
   install -m 0600 /dev/null "${ETC_DIR}/.user-created"
@@ -85,6 +96,7 @@ log "Создаю виртуальное окружение и ставлю Pyth
 runuser -u "${APP_USER}" -- python3 -m venv "${APP_DIR}/.venv"
 runuser -u "${APP_USER}" -- "${APP_DIR}/.venv/bin/pip" install --upgrade pip
 runuser -u "${APP_USER}" -- "${APP_DIR}/.venv/bin/pip" install -r "${APP_DIR}/requirements.txt"
+cd "${APP_DIR}"
 DB_PATH="$(awk -F= '/^DATABASE_PATH=/{print substr($0, index($0,$2))}' "${ETC_DIR}/.env")"
 runuser -u "${APP_USER:-zks95}" -- env DATABASE_PATH="${DB_PATH}" "${APP_DIR}/.venv/bin/python" -c 'from app import create_app; app=create_app(); print("database ready")'
 
@@ -135,7 +147,7 @@ cat <<EOF
 Установка завершена.
   Сайт:       http://${SITE_DOMAIN}
   Сервис:     systemctl status ${SERVICE_NAME}
-  Конфиг:     ${ETC_DIR}/.env (права 0640, секреты не попадают в Git)
+  Конфиг:     ${ETC_DIR}/.env (права 0600, секреты не попадают в Git)
   База:       ${DATA_DIR}/site.db
   Обновление: sudo ${APP_DIR}/update.sh
   Удаление:   sudo ${APP_DIR}/uninstall.sh
