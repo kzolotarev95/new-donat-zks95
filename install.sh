@@ -40,11 +40,16 @@ if [[ "${SETUP_SSL,,}" == "y" || "${SETUP_SSL,,}" == "yes" ]]; then
   apt-get install -y certbot python3-certbot-nginx
 fi
 
+CREATED_APP_USER=0
 if ! id -u "${APP_USER}" >/dev/null 2>&1; then
   useradd --system --home-dir "${APP_DIR}" --shell /usr/sbin/nologin "${APP_USER}"
+  CREATED_APP_USER=1
 fi
 install -d -o "${APP_USER}" -g "${APP_USER}" -m 0755 "${APP_DIR}" "${DATA_DIR}" "${BACKUP_DIR}"
 install -d -o root -g root -m 0755 "${ETC_DIR}"
+if [[ "${CREATED_APP_USER}" -eq 1 ]]; then
+  install -m 0600 /dev/null "${ETC_DIR}/.user-created"
+fi
 log "Копирую приложение в ${APP_DIR}"
 rsync -a --exclude='.venv' --exclude='instance' --exclude='*.db' "${SCRIPT_DIR}/" "${APP_DIR}/"
 chown -R "${APP_USER}:${APP_USER}" "${APP_DIR}" "${DATA_DIR}"

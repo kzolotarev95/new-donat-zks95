@@ -8,10 +8,12 @@ read -r -p "Удалить ZKS95 Developer с этого VPS? Данные и .e
 STAMP="$(date +%Y%m%d-%H%M%S)"; BACKUP="${BACKUP_DIR}/uninstall-${STAMP}"; install -d -m 700 "${BACKUP}"
 cp -a "${DATA_DIR}/site.db" "${BACKUP}/site.db" 2>/dev/null || true
 cp -a "${ETC_DIR}/.env" "${BACKUP}/.env" 2>/dev/null || true
+REMOVE_APP_USER=0
+[[ -f "${ETC_DIR}/.user-created" ]] && REMOVE_APP_USER=1
 systemctl disable --now "${SERVICE_NAME}" 2>/dev/null || true
 rm -f "/etc/systemd/system/${SERVICE_NAME}"; systemctl daemon-reload
 if [[ -L "${NGINX_ENABLED}" && "$(readlink -f "${NGINX_ENABLED}")" == "${NGINX_AVAILABLE}" ]]; then rm -f "${NGINX_ENABLED}"; fi
 rm -f "${NGINX_AVAILABLE}"; nginx -t >/dev/null 2>&1 && systemctl reload nginx || true
 rm -rf "${APP_DIR}" "${DATA_DIR}" "${ETC_DIR}"
-if id -u zks95 >/dev/null 2>&1; then userdel zks95 2>/dev/null || true; fi
+if [[ "${REMOVE_APP_USER}" -eq 1 ]] && id -u zks95 >/dev/null 2>&1; then userdel zks95 2>/dev/null || true; fi
 echo "Удалены только компоненты ${APP_NAME}. Бэкап сохранён: ${BACKUP}. Nginx, сертификаты и пакеты не удалялись."
