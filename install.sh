@@ -35,7 +35,7 @@ read -r -p "Email для Certbot (если HTTPS включён, можно ос
 log "Устанавливаю системные зависимости"
 export DEBIAN_FRONTEND=noninteractive
 apt-get update
-apt-get install -y python3 python3-venv python3-pip git nginx curl ca-certificates rsync
+apt-get install -y python3 python3-venv python3-pip git nginx curl ca-certificates rsync sqlite3
 if [[ "${SETUP_SSL,,}" == "y" || "${SETUP_SSL,,}" == "yes" ]]; then
   apt-get install -y certbot python3-certbot-nginx
 fi
@@ -93,6 +93,15 @@ TMP_NGINX="$(mktemp)"
 sed "s/__SITE_DOMAIN__/${SITE_DOMAIN}/g" "${APP_DIR}/config/nginx/new-donat-zks95.conf.template" > "${TMP_NGINX}"
 if [[ -e "${NGINX_AVAILABLE}" ]]; then
   cp -a "${NGINX_AVAILABLE}" "${BACKUP_DIR}/nginx-$(date +%Y%m%d-%H%M%S).conf"
+fi
+if [[ -L "${NGINX_ENABLED}" && "$(readlink -f "${NGINX_ENABLED}")" != "${NGINX_AVAILABLE}" ]]; then
+  cp -a "${NGINX_ENABLED}" "${BACKUP_DIR}/nginx-enabled-$(date +%Y%m%d-%H%M%S).link"
+  rm -f "${NGINX_ENABLED}"
+elif [[ -e "${NGINX_ENABLED}" && ! -L "${NGINX_ENABLED}" ]]; then
+  cp -a "${NGINX_ENABLED}" "${BACKUP_DIR}/nginx-enabled-$(date +%Y%m%d-%H%M%S).conf"
+fi
+if grep -RqsE "server_name[[:space:]].*${SITE_DOMAIN}([;[:space:]]|$)" /etc/nginx/sites-enabled 2>/dev/null; then
+  log "Предупреждение: домен уже встречается в конфигурации Nginx; проверьте конфликт server_name."
 fi
 install -m 0644 "${TMP_NGINX}" "${NGINX_AVAILABLE}"
 ln -sfn "${NGINX_AVAILABLE}" "${NGINX_ENABLED}"
