@@ -3,3 +3,4 @@ Gunicorn==23.0.0
 requests==2.32.3
 YooKassa==3.5.0
 python-dotenv==1.0.1
+cryptography==44.0.0

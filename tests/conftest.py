@@ -10,6 +10,8 @@ def app(tmp_path):
         "DATABASE_PATH": str(tmp_path / "site.db"),
         "YOOKASSA_SHOP_ID": "",
         "YOOKASSA_SECRET_KEY": "",
+        "ADMIN_USERNAME": "admin",
+        "ADMIN_PASSWORD": "correct horse battery staple",
     })
 
 @pytest.fixture()

@@ -19,8 +19,11 @@ if [[ "${OLD_REV}" == "${NEW_REV}" ]]; then log "Обновлений нет (${
 log "Обновляю ${OLD_REV:0:8} → ${NEW_REV:0:8}"
 if ! git pull --ff-only origin "${BRANCH}"; then fatal "Fast-forward невозможен; локальные изменения сохранены."; fi
 if ! runuser -u zks95 -- "${APP_DIR}/.venv/bin/pip" install -r requirements.txt; then git reset --hard "${OLD_REV}"; fatal "Зависимости не установились, выполнен откат."; fi
+install -d -o zks95 -g zks95 -m 0755 "/var/log/${APP_NAME}"
 DB_PATH="$(awk -F= '/^DATABASE_PATH=/{print substr($0, index($0,$2))}' "${ETC_DIR}/.env")"
 if ! runuser -u zks95 -- env DATABASE_PATH="${DB_PATH}" "${APP_DIR}/.venv/bin/python" -c 'from app import create_app; app=create_app(); print("database ready")'; then git reset --hard "${OLD_REV}"; fatal "Миграция базы не прошла, выполнен откат коду."; fi
+install -m 0644 "${APP_DIR}/config/systemd/${SERVICE_NAME}" "/etc/systemd/system/${SERVICE_NAME}"
+systemctl daemon-reload
 if ! systemctl restart "${SERVICE_NAME}"; then git reset --hard "${OLD_REV}"; systemctl restart "${SERVICE_NAME}" || true; fatal "Сервис не запустился, выполнен откат."; fi
 sleep 2
 if ! curl --fail --silent "${HEALTH_URL}" >/dev/null; then git reset --hard "${OLD_REV}"; systemctl restart "${SERVICE_NAME}" || true; fatal "Health check не пройден, выполнен откат коду."; fi

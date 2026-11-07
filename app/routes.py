@@ -4,18 +4,20 @@ import hmac
 import json
 import logging
 import secrets
+import requests
 from urllib.parse import urljoin
 from flask import Blueprint, current_app, jsonify, redirect, render_template, request, url_for
 from .db import create_payment_record, get_payment, update_payment
 from .github import fetch_repositories
 from .payments import create_payment, fetch_payment, normalize_amount
+from .settings import get_runtime_setting
 
 bp = Blueprint("site", __name__)
 log = logging.getLogger(__name__)
 
 
 def _absolute_url(path):
-    configured = current_app.config.get("SITE_DOMAIN", "").strip()
+    configured = get_runtime_setting("SITE_DOMAIN", current_app.config.get("SITE_DOMAIN", "")).strip()
     if configured:
         base = configured if configured.startswith("http") else f"https://{configured}"
         return urljoin(base.rstrip("/") + "/", path.lstrip("/"))
@@ -60,7 +62,21 @@ def support():
 
 @bp.route("/donate", methods=["GET"])
 def donate():
-    return render_template("donate.html", payment_error=None)
+    return render_template("donate.html", payment_error=None, recaptcha_site_key=get_runtime_setting("RECAPTCHA_SITE_KEY", current_app.config.get("RECAPTCHA_SITE_KEY", "")))
+
+
+def _verify_recaptcha(token):
+    secret = get_runtime_setting("RECAPTCHA_SECRET_KEY", current_app.config.get("RECAPTCHA_SECRET_KEY", ""))
+    if not secret:
+        return True
+    if not token:
+        return False
+    try:
+        response = requests.post("https://www.google.com/recaptcha/api/siteverify", data={"secret": secret, "response": token, "remoteip": request.remote_addr}, timeout=5)
+        return bool(response.json().get("success"))
+    except requests.RequestException:
+        log.exception("reCAPTCHA verification failed")
+        return False
 
 
 @bp.post("/api/payments")
@@ -68,15 +84,20 @@ def payments_api():
     data = request.get_json(silent=True) or request.form
     try:
         amount = normalize_amount(data.get("amount"))
+        if not _verify_recaptcha(data.get("g-recaptcha-response")):
+            return jsonify(error="Подтвердите, что вы не робот"), 400
         email = (data.get("email") or "").strip()[:254]
         message = (data.get("message") or "").strip()[:500]
         if email and ("@" not in email or " " in email):
             raise ValueError("Проверьте email")
-        if not current_app.config["YOOKASSA_SHOP_ID"] or not current_app.config["YOOKASSA_SECRET_KEY"]:
+        shop_id = get_runtime_setting("YOOKASSA_SHOP_ID", current_app.config["YOOKASSA_SHOP_ID"])
+        secret_key = get_runtime_setting("YOOKASSA_SECRET_KEY", current_app.config["YOOKASSA_SECRET_KEY"])
+        if not shop_id or not secret_key:
             return jsonify(error="Платёжная система ещё не настроена администратором"), 503
         description = "Поддержка ZKS95 Developer"
+        return_url = get_runtime_setting("YOOKASSA_RETURN_URL", current_app.config["YOOKASSA_RETURN_URL"])
         result, idempotency_key = create_payment(
-            amount, description, current_app.config["YOOKASSA_RETURN_URL"] or _absolute_url("/payment/success"),
+            amount, description, return_url or _absolute_url("/payment/success"),
             {"email": email, "message": message},
         )
         payment_id = result.id
@@ -108,7 +129,7 @@ def _verify_webhook_payload(payload):
     HMAC verification can be enabled with YOOKASSA_WEBHOOK_SECRET when a proxy
     signs incoming requests.
     """
-    configured_secret = current_app.config.get("YOOKASSA_WEBHOOK_SECRET")
+    configured_secret = get_runtime_setting("YOOKASSA_WEBHOOK_SECRET", current_app.config.get("YOOKASSA_WEBHOOK_SECRET", ""))
     if configured_secret:
         signature = request.headers.get("X-Yookassa-Signature", "")
         expected = hmac.new(configured_secret.encode(), request.get_data(), hashlib.sha256).hexdigest()

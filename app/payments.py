@@ -1,12 +1,14 @@
 """YooKassa integration isolated from HTTP routes."""
 import uuid
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
+from .settings import get_runtime_setting
 
 
 def _sdk():
     from yookassa import Configuration, Payment
     Configuration.account_id = __import__("flask").current_app.config["YOOKASSA_SHOP_ID"]
-    Configuration.secret_key = __import__("flask").current_app.config["YOOKASSA_SECRET_KEY"]
+    Configuration.account_id = get_runtime_setting("YOOKASSA_SHOP_ID", Configuration.account_id)
+    Configuration.secret_key = get_runtime_setting("YOOKASSA_SECRET_KEY", "")
     return Payment
 
 

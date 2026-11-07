@@ -10,6 +10,8 @@ Production-ready персональный портал разработчика 
 - страницы About, Projects, Services, Support Developer, Donate, Contact и FAQ;
 - динамический список публичных репозиториев из GitHub API;
 - создание платежа YooKassa, redirect на платёжную форму и webhook `/webhooks/yookassa`;
+- закрытая админ-панель `/admin` с входом, сменой пароля, платежами и runtime-настройками;
+- Google reCAPTCHA v2 перед созданием платежа (включается ключами из админки);
 - idempotency key для создания платежей, защита от повторной обработки и перепроверка статуса через API ЮKassa;
 - SQLite с сохранением платежей, статусами и журналом payload без секретов;
 - автоматические `install.sh`, `update.sh`, `uninstall.sh` с backup и health check;
@@ -60,6 +62,20 @@ YOOKASSA_WEBHOOK_URL=https://donate.example.com/webhooks/yookassa
 4. Перезапустите сервис: `sudo systemctl restart new-donat-zks95`.
 
 Секреты не хранятся в Git и не передаются в GitHub Actions. Сервер не считает тело webhook доказательством оплаты: по полученному `payment_id` выполняется запрос к API ЮKassa, затем статус и сумма записываются в SQLite. Повторный webhook обновляет ту же запись.
+
+## Админ-панель
+
+После установки панель доступна по адресу `https://ваш-домен/admin`. При первом запуске установщик создаёт администратора и спрашивает логин и пароль (минимум 12 символов). Если база уже была создана до добавления панели, создайте или сбросьте администратора из SSH:
+
+```bash
+sudo -u zks95 env DATABASE_PATH=/var/lib/new-donat-zks95/site.db \
+  /opt/new-donat-zks95/.venv/bin/python \
+  /opt/new-donat-zks95/scripts/create_admin.py
+```
+
+В панели доступны обзор, список транзакций с фильтрами, детализация payload YooKassa, ручная перепроверка статуса, смена пароля и настройки YooKassa/reCAPTCHA. Секретные значения YooKassa и Google сохраняются в SQLite зашифрованными ключом `APP_SECRET_KEY` и не показываются обратно.
+
+Для reCAPTCHA v2 создайте ключи в [Google reCAPTCHA Admin Console](https://www.google.com/recaptcha/admin), выберите тип **I'm not a robot Checkbox**, добавьте домен сайта и внесите Site Key и Secret Key в `Admin → Настройки`. Пока ключи пустые, форма пожертвований работает без CAPTCHA.
 
 ## Обновление и откат
 

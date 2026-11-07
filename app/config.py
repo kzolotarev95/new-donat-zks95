@@ -21,6 +21,10 @@ class Settings:
     yookassa_return_url: str
     yookassa_webhook_url: str
     yookassa_webhook_secret: str
+    admin_username: str
+    admin_password: str
+    recaptcha_site_key: str
+    recaptcha_secret_key: str
     github_username: str
     database_path: str
     github_repos_url: str
@@ -39,6 +43,10 @@ class Settings:
             yookassa_return_url=_env("YOOKASSA_RETURN_URL"),
             yookassa_webhook_url=_env("YOOKASSA_WEBHOOK_URL"),
             yookassa_webhook_secret=_env("YOOKASSA_WEBHOOK_SECRET"),
+            admin_username=_env("ADMIN_USERNAME"),
+            admin_password=_env("ADMIN_PASSWORD"),
+            recaptcha_site_key=_env("RECAPTCHA_SITE_KEY"),
+            recaptcha_secret_key=_env("RECAPTCHA_SECRET_KEY"),
             github_username=_env("GITHUB_USERNAME", "kzolotarev95"),
             database_path=_env("DATABASE_PATH", str(Path("instance") / "site.db")),
             github_repos_url=_env("GITHUB_REPOS_URL", "https://api.github.com/users/kzolotarev95/repos"),

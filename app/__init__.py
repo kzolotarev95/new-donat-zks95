@@ -5,6 +5,7 @@ from pathlib import Path
 from .config import Settings
 from .db import close_db, init_app as init_db_app
 from .routes import bp
+from .admin import admin_bp
 
 
 def create_app(test_config=None):
@@ -25,6 +26,10 @@ def create_app(test_config=None):
         YOOKASSA_RETURN_URL=settings.yookassa_return_url,
         YOOKASSA_WEBHOOK_URL=settings.yookassa_webhook_url,
         YOOKASSA_WEBHOOK_SECRET=settings.yookassa_webhook_secret,
+        ADMIN_USERNAME=settings.admin_username,
+        ADMIN_PASSWORD=settings.admin_password,
+        RECAPTCHA_SITE_KEY=settings.recaptcha_site_key,
+        RECAPTCHA_SECRET_KEY=settings.recaptcha_secret_key,
         GITHUB_USERNAME=settings.github_username,
         DATABASE_PATH=settings.database_path,
         GITHUB_REPOS_URL=settings.github_repos_url,
@@ -34,11 +39,18 @@ def create_app(test_config=None):
     )
     if test_config:
         app.config.update(test_config)
+    app.config.update(
+        SESSION_COOKIE_HTTPONLY=True,
+        SESSION_COOKIE_SAMESITE="Lax",
+        SESSION_COOKIE_SECURE=app.config["APP_ENV"] == "production",
+        PERMANENT_SESSION_LIFETIME=3600,
+    )
     app.config.setdefault("JSON_SORT_KEYS", False)
     app.config.setdefault("TEMPLATES_AUTO_RELOAD", app.config["APP_ENV"] != "production")
 
     init_db_app(app)
     app.register_blueprint(bp)
+    app.register_blueprint(admin_bp)
     app.teardown_appcontext(close_db)
 
     @app.context_processor
