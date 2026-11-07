@@ -10,7 +10,6 @@ from .db import create_payment_record, get_payment, update_payment
 from .github import fetch_repositories
 from .payments import create_payment, fetch_payment, normalize_amount
 from .settings import get_runtime_setting
-from .captcha import site_key as recaptcha_site_key, verify as verify_recaptcha
 
 bp = Blueprint("site", __name__)
 log = logging.getLogger(__name__)
@@ -62,7 +61,7 @@ def support():
 
 @bp.route("/donate", methods=["GET"])
 def donate():
-    return render_template("donate.html", payment_error=None, recaptcha_site_key=recaptcha_site_key())
+    return render_template("donate.html", payment_error=None)
 
 
 @bp.post("/api/payments")
@@ -70,8 +69,6 @@ def payments_api():
     data = request.get_json(silent=True) or request.form
     try:
         amount = normalize_amount(data.get("amount"))
-        if not verify_recaptcha(data.get("g-recaptcha-response")):
-            return jsonify(error="Подтвердите, что вы не робот"), 400
         email = (data.get("email") or "").strip()[:254]
         message = (data.get("message") or "").strip()[:500]
         if email and ("@" not in email or " " in email):

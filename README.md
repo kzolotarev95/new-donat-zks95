@@ -11,7 +11,7 @@ Production-ready персональный портал разработчика 
 - динамический список публичных репозиториев из GitHub API;
 - создание платежа YooKassa, redirect на платёжную форму и webhook `/webhooks/yookassa`;
 - закрытая админ-панель `/admin` с входом, сменой пароля, платежами и runtime-настройками;
-- Google reCAPTCHA v2 перед созданием платежа (включается ключами из админки);
+- Google reCAPTCHA v2 только для входа в админ-панель;
 - idempotency key для создания платежей, защита от повторной обработки и перепроверка статуса через API ЮKassa;
 - SQLite с сохранением платежей, статусами и журналом payload без секретов;
 - автоматические `install.sh`, `update.sh`, `uninstall.sh` с backup и health check;
@@ -81,7 +81,7 @@ sudo -u zks95 env DATABASE_PATH=/var/lib/new-donat-zks95/site.db \
 
 В панели доступны обзор, список транзакций с фильтрами, детализация payload YooKassa, ручная перепроверка статуса, смена пароля и настройки YooKassa/reCAPTCHA. Секретные значения YooKassa и Google сохраняются в SQLite зашифрованными ключом `APP_SECRET_KEY` и не показываются обратно.
 
-Для reCAPTCHA v2 создайте ключи в [Google reCAPTCHA Admin Console](https://www.google.com/recaptcha/admin), выберите тип **I'm not a robot Checkbox**, добавьте домен сайта и внесите Site Key и Secret Key в `Admin → Настройки`. Пока ключи пустые, форма пожертвований работает без CAPTCHA.
+Для reCAPTCHA v2 создайте ключи в [Google reCAPTCHA Admin Console](https://www.google.com/recaptcha/admin), выберите тип **I'm not a robot Checkbox**, добавьте домен сайта и внесите Site Key и Secret Key в `Admin → Настройки`. CAPTCHA показывается только на `/admin/login`; форма пожертвований её не использует.
 
 ## Обновление и откат
 

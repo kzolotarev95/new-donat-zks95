@@ -26,11 +26,11 @@ def test_admin_login_and_dashboard(client):
 def test_admin_requires_authentication(client):
     assert client.get("/admin/payments").status_code == 302
 
-def test_recaptcha_is_required_when_configured(app, client):
+def test_donate_does_not_require_recaptcha(app, client):
     app.config["RECAPTCHA_SECRET_KEY"] = "captcha-secret"
     response = client.post("/api/payments", json={"amount": "500"})
-    assert response.status_code == 400
-    assert "не робот" in response.get_json()["error"]
+    assert response.status_code == 503
+    assert "не настроена" in response.get_json()["error"]
 
 def test_admin_login_renders_recaptcha_when_configured(app, client):
     app.config["RECAPTCHA_SITE_KEY"] = "site-key"
