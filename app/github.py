@@ -3,7 +3,7 @@ import time
 import requests
 
 _cache = {}
-_cache_ttl = 600
+_cache_ttl = 60
 
 def fetch_repositories(username, endpoint=None):
     cache_key = (username, endpoint or "")

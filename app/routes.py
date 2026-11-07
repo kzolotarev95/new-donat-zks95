@@ -49,6 +49,16 @@ def projects():
     return render_template("projects.html", repos=repos, github_error=github_error)
 
 
+@bp.get("/api/repos")
+def repos_api():
+    try:
+        repos = fetch_repositories(current_app.config["GITHUB_USERNAME"], current_app.config["GITHUB_REPOS_URL"])
+        return jsonify(repositories=repos)
+    except Exception:
+        log.exception("GitHub API unavailable")
+        return jsonify(error="Репозитории временно недоступны", repositories=[]), 503
+
+
 @bp.get("/services")
 def services():
     return render_template("services.html")
