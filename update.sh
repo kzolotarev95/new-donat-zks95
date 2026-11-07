@@ -5,6 +5,7 @@ APP_NAME="new-donat-zks95"; APP_DIR="/opt/${APP_NAME}"; DATA_DIR="/var/lib/${APP
 log(){ printf '\033[1;33m[update]\033[0m %s\n' "$*"; }
 fatal(){ printf '\033[1;31m[error]\033[0m %s\n' "$*" >&2; exit 1; }
 [[ "${EUID}" -eq 0 ]] || fatal "Запустите через sudo."
+git config --global --add safe.directory "${APP_DIR}" 2>/dev/null || true
 [[ -d "${APP_DIR}/.git" ]] || fatal "${APP_DIR} не является Git checkout. Переустановите приложение."
 cd "${APP_DIR}"
 mkdir -p "${BACKUP_DIR}"; chmod 700 "${BACKUP_DIR}"
