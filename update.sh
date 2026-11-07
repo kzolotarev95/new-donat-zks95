@@ -11,6 +11,7 @@ mkdir -p "${BACKUP_DIR}"; chmod 700 "${BACKUP_DIR}"
 STAMP="$(date +%Y%m%d-%H%M%S)"; BACKUP="${BACKUP_DIR}/update-${STAMP}"; mkdir -p "${BACKUP}"
 cp -a "${DATA_DIR}/site.db" "${BACKUP}/site.db" 2>/dev/null || true; cp -a "${ETC_DIR}/.env" "${BACKUP}/.env" 2>/dev/null || true
 OLD_REV="$(git rev-parse HEAD)"; git fetch --prune origin
+git archive --format=tar --output="${BACKUP}/current-${OLD_REV:0:8}.tar" "${OLD_REV}"
 BRANCH="$(git symbolic-ref --short HEAD 2>/dev/null || echo main)"; REMOTE_REF="origin/${BRANCH}"
 if ! git rev-parse --verify "${REMOTE_REF}" >/dev/null 2>&1; then REMOTE_REF="origin/main"; fi
 NEW_REV="$(git rev-parse "${REMOTE_REF}")"
