@@ -17,7 +17,7 @@ document.addEventListener('DOMContentLoaded', () => {
     return Uint8Array.from([...raw].map(char => char.charCodeAt(0)));
   };
   const supported = () => 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
-  const register = () => navigator.serviceWorker.register('/service-worker.js', { scope: '/' });
+  const register = () => navigator.serviceWorker.register('/service-worker.js', { scope: '/admin/' });
   const save = subscription => fetch('/admin/api/notifications/subscription', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },

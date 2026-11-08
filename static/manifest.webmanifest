@@ -1,9 +1,10 @@
 {
   "name": "ZKS95 Developer",
   "short_name": "ZKS95",
+  "id": "/admin/",
   "description": "ZKS95 Developer Donate",
-  "start_url": "/admin/notifications",
-  "scope": "/",
+  "start_url": "/admin/",
+  "scope": "/admin/",
   "display": "standalone",
   "background_color": "#0b0c0f",
   "theme_color": "#0b0c0f",

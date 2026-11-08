@@ -191,6 +191,11 @@ def test_system_event_push_setting(app, monkeypatch):
         result = notify_service_event("startup")
     assert result["sent"] == 1
 
+def test_admin_pwa_starts_inside_admin_scope(client):
+    manifest = client.get("/static/manifest.webmanifest").get_json()
+    assert manifest["start_url"] == "/admin/"
+    assert manifest["scope"] == "/admin/"
+
 def test_admin_login_renders_recaptcha_when_configured(app, client):
     app.config["RECAPTCHA_SITE_KEY"] = "site-key"
     response = client.get("/admin/login")
