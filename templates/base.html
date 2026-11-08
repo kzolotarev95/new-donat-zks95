@@ -4,9 +4,13 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#0b0c0f">
-  <meta name="description" content="ZKS95 Developer — инженерные продукты, open source и поддержка разработки.">
+  <meta name="description" content="{% block meta_description %}ZKS95 Developer — инженерные продукты, open source и поддержка разработки.{% endblock %}">
+  <meta property="og:title" content="{% block og_title %}{{ self.title()|striptags }}{% endblock %}">
+  <meta property="og:description" content="{% block og_description %}ZKS95 Developer — инженерные продукты, open source и поддержка разработки.{% endblock %}">
+  <meta property="og:type" content="website">
   <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
   <link rel="alternate icon" href="{{ url_for('static', filename='favicon.svg') }}">
+  <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='apple-touch-icon.png') }}">
   <link rel="manifest" href="{{ url_for('static', filename='manifest.webmanifest') }}">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">

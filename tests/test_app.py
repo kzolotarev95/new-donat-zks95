@@ -23,6 +23,8 @@ def test_donate_page_contains_donor_wall(client):
     assert "Собираю полезные системы" not in body
     assert "Ники появляются после подтверждения платежа" not in body
     assert "Пара слов разработчику" in body
+    assert '<meta property="og:title" content="ZKS95 Developer Donate">' in body
+    assert "apple-touch-icon.png" in body
     assert "visual-effect-none" in body
 
 def test_public_navigation_and_contact_copy(client):
