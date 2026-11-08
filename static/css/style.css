@@ -106,3 +106,7 @@ h2{font-size:clamp(1.55rem,3vw,2.45rem)!important;line-height:1.12;letter-spacin
 
 /* Keep backup file controls and their checkboxes aligned as one group. */
 .backup-actions input[type=file]{width:100%;margin:0!important}.backup-actions .backup-check{width:100%;justify-content:center;white-space:nowrap}.backup-actions .backup-check input[type=checkbox]{display:inline-block;width:16px!important;min-width:16px;height:16px;margin:0!important;padding:0;flex:0 0 16px}
+
+/* Bring the supporters wall closer to the checkout section. */
+.donate-page{padding-bottom:42px}.donor-wall{padding-top:4px}
+@media(max-width:760px){.donate-page{padding-bottom:34px}.donor-wall{padding-top:0}}
