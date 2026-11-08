@@ -103,3 +103,6 @@ h2{font-size:clamp(1.55rem,3vw,2.45rem)!important;line-height:1.12;letter-spacin
 /* Keep checkout methods directly above the payment action. */
 .donate-form .payment-banner{margin:18px 0;padding:18px 18px 14px}.donate-form .payment-banner-title{margin-top:14px}.donate-form .payment-banner-foot{margin-top:12px}
 @media(max-width:760px){.donate-form .payment-banner{margin:16px 0;padding:14px 12px 11px}.donate-form .bank-list{gap:6px}.donate-form .bank-chip{padding:7px 8px;font-size:.61rem}}
+
+/* Keep backup file controls and their checkboxes aligned as one group. */
+.backup-actions input[type=file]{width:100%;margin:0!important}.backup-actions .backup-check{width:100%;justify-content:center;white-space:nowrap}.backup-actions .backup-check input[type=checkbox]{display:inline-block;width:16px!important;min-width:16px;height:16px;margin:0!important;padding:0;flex:0 0 16px}
