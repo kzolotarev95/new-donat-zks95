@@ -79,3 +79,6 @@ h2{font-size:clamp(1.55rem,3vw,2.45rem)!important;line-height:1.12;letter-spacin
 @media(max-width:760px){.admin-login{width:calc(100% - 32px);margin-top:28px}.admin-login-card{padding:20px 18px}.admin-login-card .captcha-wrap{transform:scale(.92);transform-origin:center top;margin-bottom:6px}}
 /* Keep the currency suffix stable and hide the browser's bright number spinner. */
 .amount-input span{pointer-events:none;color:var(--gold)!important}.donate-form input[type=number]{appearance:textfield;-moz-appearance:textfield}.donate-form input[type=number]::-webkit-inner-spin-button,.donate-form input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+/* Keep the mobile navigation above the page content when it is opened. */
+.site-header{z-index:20!important}.nav-links{z-index:30}
+@media(max-width:760px){.nav-links{top:calc(100% + 8px);max-height:calc(100vh - 92px);overflow-y:auto;box-shadow:0 20px 45px rgba(0,0,0,.48)}}
