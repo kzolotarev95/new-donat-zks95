@@ -7,11 +7,12 @@ test -d "$APP_DIR" || { echo "Application is not installed: $APP_DIR" >&2; exit 
 TMP="$(mktemp)"
 trap 'rm -f "$TMP"' 0 HUP INT TERM
 curl -fsSL "$RAW?v=$(date +%s)" -o "$TMP"
-if ! git -c safe.directory="$APP_DIR" -C "$APP_DIR" diff --quiet -- update.sh; then
+STATUS="$(git -c safe.directory="$APP_DIR" -C "$APP_DIR" status --porcelain -- update.sh)"
+if [ -n "$STATUS" ]; then
   BACKUP_DIR="/var/backups/new-donat-zks95"
   mkdir -p "$BACKUP_DIR"
   cp -a "$APP_DIR/update.sh" "$BACKUP_DIR/update-wrapper-$(date +%Y%m%d-%H%M%S).sh" 2>/dev/null || true
-  git -c safe.directory="$APP_DIR" -C "$APP_DIR" checkout -- update.sh
+  git -c safe.directory="$APP_DIR" -C "$APP_DIR" restore --staged --worktree -- update.sh 2>/dev/null || git -c safe.directory="$APP_DIR" -C "$APP_DIR" checkout HEAD -- update.sh
 fi
 chmod 0755 "$TMP"
 exec "$TMP" </dev/tty
