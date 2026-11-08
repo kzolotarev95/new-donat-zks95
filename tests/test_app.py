@@ -104,3 +104,14 @@ def test_admin_login_renders_recaptcha_when_configured(app, client):
     body = response.get_data(as_text=True)
     assert "g-recaptcha" in body
     assert "site-key" in body
+
+def test_admin_captcha_error_is_next_to_captcha(app, client):
+    app.config["RECAPTCHA_SITE_KEY"] = "site-key"
+    app.config["RECAPTCHA_SECRET_KEY"] = "secret-key"
+    login = client.get("/admin/login")
+    token = login.get_data(as_text=True).split('name="csrf_token" value="')[1].split('"', 1)[0]
+    response = client.post("/admin/login", data={"csrf_token": token, "username": "admin", "password": "correct horse battery staple"})
+    body = response.get_data(as_text=True)
+    assert response.status_code == 400
+    assert 'class="captcha-error"' in body
+    assert "Подтвердите, что вы не робот." in body

@@ -43,8 +43,7 @@ def login_post():
     username = (request.form.get("username") or "").strip()
     password = request.form.get("password") or ""
     if not verify_recaptcha(request.form.get("g-recaptcha-response")):
-        flash("Подтвердите, что вы не робот.", "error")
-        return render_template("admin/login.html", username=username, recaptcha_site_key=recaptcha_site_key()), 400
+        return render_template("admin/login.html", username=username, captcha_error="Подтвердите, что вы не робот.", recaptcha_site_key=recaptcha_site_key()), 400
     user = get_admin_user(username)
     if not user or not check_password_hash(user["password_hash"], password):
         flash("Неверный логин или пароль.", "error")
