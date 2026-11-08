@@ -19,7 +19,17 @@ def test_donate_page_contains_donor_wall(client):
     assert "donor-wall" in body
     assert "Собираю полезные системы" not in body
     assert "Ники появляются после подтверждения платежа" not in body
+    assert "Пара слов разработчику" in body
     assert "visual-effect-none" in body
+
+def test_public_navigation_and_contact_copy(client):
+    home = client.get("/")
+    home_body = client.get("/donate").get_data(as_text=True)
+    contact = client.get("/contact")
+    assert "Support Developer" not in home_body
+    assert "https://t.me/kzolotarev95" in contact.get_data(as_text=True)
+    assert "Открыть Telegram" in contact.get_data(as_text=True)
+    assert "mailto:" not in contact.get_data(as_text=True)
 
 def test_donor_amount_and_local_avatar(app, client):
     with app.app_context():

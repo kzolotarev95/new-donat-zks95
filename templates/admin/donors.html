@@ -1,6 +1,6 @@
 {% extends "admin/base.html" %}
 {% block title %}Донатеры — ZKS95 Admin{% endblock %}
-{% block content %}
+{% block content %}<div class="donor-admin-page">
 <div class="admin-title"><div><p class="eyebrow">Community / Supporters</p><h1>Донатеры.</h1></div><span class="admin-user">{{ donors|length }} записей</span></div>
 <section class="admin-panel donor-create-panel">
   <div class="panel-head"><h2>Добавить вручную</h2><span class="muted">Автоматические донатеры появятся после подтверждённой оплаты.</span></div>
@@ -37,4 +37,4 @@
   {% endfor %}
   </div>
 </section>
-{% endblock %}
+</div>{% endblock %}

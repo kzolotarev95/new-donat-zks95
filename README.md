@@ -8,7 +8,7 @@ Production-ready персональный портал разработчика 
 
 - адаптивный чёрно-красный интерфейс с анимациями и компактной админкой;
 - корневой адрес сайта автоматически открывает страницу `/donate`;
-- страницы About, Projects, Services, Support Developer, Donate, Contact и FAQ;
+- страницы About, Projects, Services, Donate, Contact и FAQ;
 - динамический список публичных репозиториев из GitHub API;
 - создание платежа YooKassa, redirect на платёжную форму и webhook `/webhooks/yookassa`;
 - закрытая админ-панель `/admin` с входом, сменой логина/пароля, платежами, донатерами и runtime-настройками;
