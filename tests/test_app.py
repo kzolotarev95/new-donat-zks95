@@ -1,3 +1,6 @@
+from app.db import create_donor
+
+
 def test_healthcheck(client):
     response = client.get("/healthz")
     assert response.status_code == 200
@@ -12,6 +15,16 @@ def test_donate_page_contains_donor_wall(client):
     response = client.get("/donate")
     assert response.status_code == 200
     assert "donor-wall" in response.get_data(as_text=True)
+
+def test_donor_amount_and_local_avatar(app, client):
+    with app.app_context():
+        donor_id = create_donor("Alice", "c042", "Спасибо", "123.45")
+    page = client.get("/donate")
+    assert "Alice" in page.get_data(as_text=True)
+    assert "123.45 ₽" in page.get_data(as_text=True)
+    avatar = client.get(f"/api/donors/{donor_id}/avatar.svg")
+    assert avatar.status_code == 200
+    assert avatar.mimetype == "image/svg+xml"
 
 def test_missing_payment_config_is_explicit(client):
     response = client.post("/api/payments", json={"amount": "500"})
@@ -43,6 +56,8 @@ def test_admin_donors_page(client):
     response = client.get("/admin/donors")
     assert response.status_code == 200
     assert "Добавить вручную" in response.get_data(as_text=True)
+    assert "Сумма, ₽" in response.get_data(as_text=True)
+    assert "Цвет 100" in response.get_data(as_text=True)
 
 def test_donate_does_not_require_recaptcha(app, client):
     app.config["RECAPTCHA_SECRET_KEY"] = "captcha-secret"

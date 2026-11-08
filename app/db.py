@@ -139,6 +139,23 @@ DONOR_COLORS = {
     "green": "Зелёный",
     "violet": "Фиолетовый",
 }
+DONOR_COLOR_VALUES = {
+    "red": "#e10620",
+    "orange": "#ed6a24",
+    "gold": "#c99418",
+    "blue": "#326fe4",
+    "green": "#269b65",
+    "violet": "#8056d9",
+}
+for _color_number in range(1, 101):
+    _token = f"c{_color_number:03d}"
+    DONOR_COLORS[_token] = f"Цвет {_color_number:02d}"
+    DONOR_COLOR_VALUES[_token] = f"hsl({(_color_number * 137) % 360} 78% 58%)"
+DONOR_PALETTE_KEYS = [f"c{number:03d}" for number in range(1, 101)]
+
+
+def donor_color(token):
+    return DONOR_COLOR_VALUES.get(token, DONOR_COLOR_VALUES["red"])
 
 
 def list_donors(active_only=True, limit=60):
@@ -148,24 +165,24 @@ def list_donors(active_only=True, limit=60):
     ).fetchall()
 
 
-def create_donor(nickname, color="red", note=""):
+def create_donor(nickname, color="red", note="", total_amount="0"):
     if color not in DONOR_COLORS:
         color = "red"
     now = _now()
     cursor = get_db().execute(
-        "INSERT INTO donors(nickname, color, note, created_at, updated_at) VALUES (?, ?, ?, ?, ?)",
-        (nickname, color, note, now, now),
+        "INSERT INTO donors(nickname, color, note, total_amount, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)",
+        (nickname, color, note, str(total_amount), now, now),
     )
     get_db().commit()
     return cursor.lastrowid
 
 
-def update_donor(donor_id, nickname, color, note, is_active=1):
+def update_donor(donor_id, nickname, color, note, total_amount="0", is_active=1):
     if color not in DONOR_COLORS:
         color = "red"
     get_db().execute(
-        "UPDATE donors SET nickname = ?, color = ?, note = ?, is_active = ?, updated_at = ? WHERE id = ?",
-        (nickname, color, note, int(bool(is_active)), _now(), donor_id),
+        "UPDATE donors SET nickname = ?, color = ?, note = ?, total_amount = ?, is_active = ?, updated_at = ? WHERE id = ?",
+        (nickname, color, note, str(total_amount), int(bool(is_active)), _now(), donor_id),
     )
     get_db().commit()
 
@@ -175,13 +192,17 @@ def delete_donor(donor_id):
     get_db().commit()
 
 
+def get_donor(donor_id):
+    return get_db().execute("SELECT * FROM donors WHERE id = ?", (donor_id,)).fetchone()
+
+
 def record_donor_payment(nickname, amount):
     """Create or update the public donor card after a confirmed payment."""
     nickname = (nickname or "").strip()[:64]
     if not nickname:
         return
     color_index = int(hashlib.sha256(nickname.lower().encode("utf-8")).hexdigest()[:8], 16)
-    color = tuple(DONOR_COLORS)[color_index % len(DONOR_COLORS)]
+    color = DONOR_PALETTE_KEYS[color_index % len(DONOR_PALETTE_KEYS)]
     now = _now()
     db = get_db()
     db.execute(

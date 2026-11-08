@@ -1,12 +1,13 @@
 """HTTP routes for the public site and payment webhooks."""
 import hashlib
 import hmac
+from html import escape
 import json
 import logging
 import secrets
 from urllib.parse import urljoin
-from flask import Blueprint, current_app, jsonify, redirect, render_template, request, url_for
-from .db import create_payment_record, get_payment, list_donors, record_donor_payment, update_payment
+from flask import Blueprint, Response, current_app, jsonify, redirect, render_template, request, url_for
+from .db import create_payment_record, donor_color, get_donor, get_payment, list_donors, record_donor_payment, update_payment
 from .github import fetch_repositories
 from .payments import create_payment, fetch_payment, normalize_amount
 from .settings import get_runtime_setting
@@ -66,6 +67,26 @@ def support():
 @bp.route("/donate", methods=["GET"])
 def donate():
     return render_template("donate.html", payment_error=None, donors=list_donors())
+
+
+@bp.get("/api/donors/<int:donor_id>/avatar.svg")
+def donor_avatar(donor_id):
+    donor = get_donor(donor_id)
+    if donor is None:
+        return Response(status=404)
+    digest = hashlib.sha256(donor["nickname"].encode("utf-8")).hexdigest()
+    accent = donor_color(donor["color"])
+    x = 20 + int(digest[0:2], 16) % 60
+    y = 20 + int(digest[2:4], 16) % 60
+    initial = escape(donor["nickname"][:1].upper())
+    svg = f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+<rect width="100" height="100" rx="24" fill="#0d1015"/>
+<circle cx="{x}" cy="{y}" r="34" fill="{accent}" opacity=".9"/>
+<path d="M0 78 Q 34 {30 + int(digest[4:6], 16) % 45} 100 18 V100 H0Z" fill="#ffffff" opacity=".12"/>
+<circle cx="{78 - int(digest[6:8], 16) % 28}" cy="{18 + int(digest[8:10], 16) % 45}" r="7" fill="#fff" opacity=".48"/>
+<text x="50" y="63" text-anchor="middle" fill="#fff" font-family="Arial,sans-serif" font-size="38" font-weight="700">{initial}</text>
+</svg>'''
+    return Response(svg, mimetype="image/svg+xml", headers={"Cache-Control": "public, max-age=86400"})
 
 
 @bp.post("/api/payments")

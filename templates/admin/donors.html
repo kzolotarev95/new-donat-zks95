@@ -8,6 +8,7 @@
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <label>Никнейм<input name="nickname" maxlength="64" placeholder="например, zks95" required></label>
     <label>Цвет<select name="color">{% for value,label in donor_colors.items() %}<option value="{{ value }}">{{ label }}</option>{% endfor %}</select></label>
+    <label>Сумма, ₽<input type="number" name="total_amount" min="0" step="0.01" value="0" required></label>
     <label>Подпись <span class="optional">необязательно</span><input name="note" maxlength="120" placeholder="Поддержал проект"></label>
     <button class="button button-gold" type="submit">Добавить</button>
   </form>
@@ -18,9 +19,10 @@
   {% for donor in donors %}
     <form class="donor-admin-row" method="post" action="{{ url_for('admin.edit_donor', donor_id=donor.id) }}">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-      <div class="donor-admin-name"><span class="donor-swatch donor-{{ donor.color }}"></span><strong>{{ donor.nickname }}</strong><small>{{ donor.donations_count }} платеж(ей) · {{ donor.total_amount }} ₽</small></div>
+      <div class="donor-admin-name"><span class="donor-swatch donor-{{ donor.color }}" style="--donor-accent: {{ donor_color(donor.color) }}"></span><strong>{{ donor.nickname }}</strong><small>{{ donor.donations_count }} платеж(ей) · {{ donor.total_amount }} ₽</small></div>
       <input name="nickname" value="{{ donor.nickname }}" maxlength="64" required>
       <select name="color">{% for value,label in donor_colors.items() %}<option value="{{ value }}" {% if donor.color == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+      <input type="number" name="total_amount" value="{{ donor.total_amount }}" min="0" step="0.01" required>
       <input name="note" value="{{ donor.note }}" maxlength="120" placeholder="Подпись">
       <label class="donor-active"><input type="checkbox" name="is_active" value="1" {% if donor.is_active %}checked{% endif %}> Показывать</label>
       <button class="button button-ghost" type="submit">Сохранить</button>

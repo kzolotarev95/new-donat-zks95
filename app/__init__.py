@@ -3,7 +3,7 @@ from flask import Flask
 from pathlib import Path
 
 from .config import Settings
-from .db import close_db, init_app as init_db_app
+from .db import close_db, donor_color, init_app as init_db_app
 from .routes import bp
 from .admin import admin_bp
 
@@ -59,6 +59,7 @@ def create_app(test_config=None):
             "brand": "ZKS95 Developer",
             "site_domain": app.config.get("SITE_DOMAIN", ""),
             "year": 2026,
+            "donor_color": donor_color,
         }
 
     return app

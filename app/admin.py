@@ -4,6 +4,7 @@ import logging
 import math
 import re
 import sqlite3
+from decimal import Decimal, InvalidOperation
 from functools import wraps
 from flask import Blueprint, flash, redirect, render_template, request, session, url_for, current_app, jsonify
 from werkzeug.security import check_password_hash, generate_password_hash
@@ -89,7 +90,12 @@ def _donor_form_values():
     nickname = (request.form.get("nickname") or "").strip()[:64]
     color = (request.form.get("color") or "red").strip()
     note = (request.form.get("note") or "").strip()[:120]
-    return nickname, color, note
+    raw_amount = (request.form.get("total_amount") or "0").strip().replace(",", ".")
+    try:
+        total_amount = Decimal(raw_amount).quantize(Decimal("0.01"))
+    except (InvalidOperation, ValueError):
+        total_amount = None
+    return nickname, color, note, total_amount
 
 
 @admin_bp.get("/donors")
@@ -101,12 +107,14 @@ def donors():
 @admin_bp.post("/donors")
 @admin_required
 def create_donor_admin():
-    nickname, color, note = _donor_form_values()
+    nickname, color, note, total_amount = _donor_form_values()
     if len(nickname) < 2 or any(char in "<>/\\" for char in nickname):
         flash("Укажите корректный никнейм от 2 символов.", "error")
+    elif total_amount is None or total_amount < 0:
+        flash("Сумма должна быть числом от 0 ₽.", "error")
     else:
         try:
-            create_donor(nickname, color, note)
+            create_donor(nickname, color, note, total_amount)
             flash("Донатер добавлен.", "success")
         except sqlite3.IntegrityError:
             flash("Такой никнейм уже есть в списке.", "error")
@@ -116,12 +124,14 @@ def create_donor_admin():
 @admin_bp.post("/donors/<int:donor_id>")
 @admin_required
 def edit_donor(donor_id):
-    nickname, color, note = _donor_form_values()
+    nickname, color, note, total_amount = _donor_form_values()
     if len(nickname) < 2 or any(char in "<>/\\" for char in nickname):
         flash("Укажите корректный никнейм от 2 символов.", "error")
+    elif total_amount is None or total_amount < 0:
+        flash("Сумма должна быть числом от 0 ₽.", "error")
     else:
         try:
-            update_donor(donor_id, nickname, color, note, request.form.get("is_active") == "1")
+            update_donor(donor_id, nickname, color, note, total_amount, request.form.get("is_active") == "1")
             flash("Данные донатера обновлены.", "success")
         except sqlite3.IntegrityError:
             flash("Такой никнейм уже есть в списке.", "error")
