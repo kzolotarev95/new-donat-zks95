@@ -10,6 +10,16 @@
     <h1>Поддержать<br><em>разработку.</em></h1>
     <p>Каждый перевод помогает поддерживать open-source проекты, серверы и новые релизы.</p>
 
+
+    <div class="donate-note"><span>✓</span><p>Минимальная сумма — 100 ₽.<br>Данные карты остаются у ЮKassa.</p></div>
+  </div>
+
+  <form class="donate-form" id="donate-form">
+    <div class="donate-form-head"><div><span class="form-kicker">01 / Сумма</span><h2>Выберите вклад</h2></div><span class="form-lock">Защищено</span></div>
+    <label>Сумма поддержки<div class="amount-input"><input type="number" name="amount" min="100" step="1" value="500" required><span>₽</span></div></label>
+    <div class="quick-amounts" role="group" aria-label="Быстрый выбор суммы"><button type="button" data-amount="250">250 ₽</button><button type="button" data-amount="500" class="selected">500 ₽</button><button type="button" data-amount="1000">1 000 ₽</button><button type="button" data-amount="2500">2 500 ₽</button></div>
+    <label>Никнейм <span class="optional">обязательно</span><input type="text" name="nickname" maxlength="64" minlength="2" placeholder="например, zks95" required></label>
+    <label>Сообщение <span class="optional">необязательно</span><textarea name="message" rows="3" maxlength="500" placeholder="Пара слов разработчику"></textarea></label>
     <div class="payment-banner" aria-label="Способы оплаты">
       <div class="payment-banner-top"><span class="signal-dot"></span><strong>Оплата через ЮKassa</strong><span class="secure-label">SSL · 3-D Secure</span></div>
       <div class="payment-banner-title">Банковские способы оплаты</div>
@@ -22,15 +32,6 @@
       <div class="payment-banner-foot">После нажатия кнопки вы перейдёте к выбору способа оплаты.</div>
     </div>
 
-    <div class="donate-note"><span>✓</span><p>Минимальная сумма — 100 ₽.<br>Данные карты остаются у ЮKassa.</p></div>
-  </div>
-
-  <form class="donate-form" id="donate-form">
-    <div class="donate-form-head"><div><span class="form-kicker">01 / Сумма</span><h2>Выберите вклад</h2></div><span class="form-lock">Защищено</span></div>
-    <label>Сумма поддержки<div class="amount-input"><input type="number" name="amount" min="100" step="1" value="500" required><span>₽</span></div></label>
-    <div class="quick-amounts" role="group" aria-label="Быстрый выбор суммы"><button type="button" data-amount="250">250 ₽</button><button type="button" data-amount="500" class="selected">500 ₽</button><button type="button" data-amount="1000">1 000 ₽</button><button type="button" data-amount="2500">2 500 ₽</button></div>
-    <label>Никнейм <span class="optional">обязательно</span><input type="text" name="nickname" maxlength="64" minlength="2" placeholder="например, zks95" required></label>
-    <label>Сообщение <span class="optional">необязательно</span><textarea name="message" rows="3" maxlength="500" placeholder="Пара слов разработчику"></textarea></label>
     <button class="button button-gold button-full pay-button" type="submit"><span class="pay-icon">↗</span><span>Перейти к оплате</span><span class="pay-arrow">→</span></button>
     <div class="form-status" role="status" aria-live="polite"></div>
     <small class="form-legal">Нажимая кнопку, вы соглашаетесь с обработкой данных для проведения платежа.</small>

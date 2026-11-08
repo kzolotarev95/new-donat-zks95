@@ -99,3 +99,7 @@ h2{font-size:clamp(1.55rem,3vw,2.45rem)!important;line-height:1.12;letter-spacin
 .push-device-actions [data-push-disable],.push-inline-form .button-ghost{color:var(--gold)!important;border-color:rgba(225,6,32,.55);background:rgba(225,6,32,.08)}.push-device-actions [data-push-disable]:hover,.push-inline-form .button-ghost:hover{color:#fff!important;background:var(--gold);border-color:var(--gold)}
 .admin-nav a,.admin-nav button{font-size:.72rem}
 @media(max-width:760px){.admin-nav{gap:5px}.admin-nav a,.admin-nav button{font-size:.72rem!important;padding:9px 10px!important}}
+
+/* Keep checkout methods directly above the payment action. */
+.donate-form .payment-banner{margin:18px 0;padding:18px 18px 14px}.donate-form .payment-banner-title{margin-top:14px}.donate-form .payment-banner-foot{margin-top:12px}
+@media(max-width:760px){.donate-form .payment-banner{margin:16px 0;padding:14px 12px 11px}.donate-form .bank-list{gap:6px}.donate-form .bank-chip{padding:7px 8px;font-size:.61rem}}

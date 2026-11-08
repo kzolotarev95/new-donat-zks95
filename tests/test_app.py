@@ -176,6 +176,11 @@ def test_public_nav_hides_about(client):
     body = client.get("/donate").get_data(as_text=True)
     assert ">About</a>" not in body
 
+def test_payment_methods_are_above_payment_action(client):
+    body = client.get("/donate").get_data(as_text=True)
+    assert body.count("payment-banner") >= 1
+    assert body.index("payment-banner") < body.index("pay-button")
+
 def test_system_event_push_setting(app, monkeypatch):
     from app.push import notify_service_event
     from app.settings import set_runtime_setting
