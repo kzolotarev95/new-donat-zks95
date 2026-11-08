@@ -92,12 +92,13 @@ def _donor_form_values():
     color = (request.form.get("color") or "red").strip()
     note = (request.form.get("note") or "").strip()[:120]
     social_url = (request.form.get("social_url") or "").strip()[:500]
+    pinned = request.form.get("pinned") == "1"
     raw_amount = (request.form.get("total_amount") or "0").strip().replace(",", ".")
     try:
         total_amount = Decimal(raw_amount).quantize(Decimal("0.01"))
     except (InvalidOperation, ValueError):
         total_amount = None
-    return nickname, color, note, total_amount, social_url
+    return nickname, color, note, total_amount, social_url, pinned
 
 
 @admin_bp.get("/donors")
@@ -109,7 +110,7 @@ def donors():
 @admin_bp.post("/donors")
 @admin_required
 def create_donor_admin():
-    nickname, color, note, total_amount, social_url = _donor_form_values()
+    nickname, color, note, total_amount, social_url, pinned = _donor_form_values()
     if len(nickname) < 2 or any(char in "<>/\\" for char in nickname):
         flash("Укажите корректный никнейм от 2 символов.", "error")
     elif total_amount is None or total_amount < 0:
@@ -118,7 +119,7 @@ def create_donor_admin():
         flash("Ссылка должна начинаться с http:// или https://.", "error")
     else:
         try:
-            create_donor(nickname, color, note, total_amount, social_url)
+            create_donor(nickname, color, note, total_amount, social_url, pinned)
             flash("Донатер добавлен.", "success")
         except sqlite3.IntegrityError:
             flash("Такой никнейм уже есть в списке.", "error")
@@ -128,7 +129,7 @@ def create_donor_admin():
 @admin_bp.post("/donors/<int:donor_id>")
 @admin_required
 def edit_donor(donor_id):
-    nickname, color, note, total_amount, social_url = _donor_form_values()
+    nickname, color, note, total_amount, social_url, pinned = _donor_form_values()
     if len(nickname) < 2 or any(char in "<>/\\" for char in nickname):
         flash("Укажите корректный никнейм от 2 символов.", "error")
     elif total_amount is None or total_amount < 0:
@@ -137,7 +138,7 @@ def edit_donor(donor_id):
         flash("Ссылка должна начинаться с http:// или https://.", "error")
     else:
         try:
-            update_donor(donor_id, nickname, color, note, total_amount, social_url, request.form.get("is_active") == "1")
+            update_donor(donor_id, nickname, color, note, total_amount, social_url, pinned, request.form.get("is_active") == "1")
             flash("Данные донатера обновлены.", "success")
         except sqlite3.IntegrityError:
             flash("Такой никнейм уже есть в списке.", "error")

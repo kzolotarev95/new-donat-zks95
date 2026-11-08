@@ -1,4 +1,4 @@
-from app.db import create_donor
+from app.db import create_donor, list_donors
 
 
 def test_healthcheck(client):
@@ -27,6 +27,12 @@ def test_donor_amount_and_local_avatar(app, client):
     avatar = client.get(f"/api/donors/{donor_id}/avatar.svg")
     assert avatar.status_code == 200
     assert avatar.mimetype == "image/svg+xml"
+
+def test_pinned_donor_is_listed_first(app):
+    with app.app_context():
+        create_donor("Regular", "c001")
+        create_donor("Pinned", "c002", pinned=1)
+        assert [donor["nickname"] for donor in list_donors()] == ["Pinned", "Regular"]
 
 def test_missing_payment_config_is_explicit(client):
     response = client.post("/api/payments", json={"amount": "500"})

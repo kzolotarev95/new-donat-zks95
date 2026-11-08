@@ -11,6 +11,7 @@
     <label>Сумма, ₽<input type="number" name="total_amount" min="0" step="0.01" value="0" required></label>
     <label>Ссылка <span class="optional">необязательно</span><input type="url" name="social_url" maxlength="500" placeholder="https://t.me/nickname"></label>
     <label>Подпись <span class="optional">необязательно</span><input name="note" maxlength="120" placeholder="Поддержал проект"></label>
+    <label class="donor-check-field"><input type="checkbox" name="pinned" value="1"> Закрепить</label>
     <button class="button button-gold" type="submit">Добавить</button>
   </form>
 </section>
@@ -27,6 +28,7 @@
       <input type="url" name="social_url" value="{{ donor.social_url }}" maxlength="500" placeholder="Ссылка">
       <input name="note" value="{{ donor.note }}" maxlength="120" placeholder="Подпись">
       <label class="donor-active"><input type="checkbox" name="is_active" value="1" {% if donor.is_active %}checked{% endif %}> Показывать</label>
+      <label class="donor-pinned"><input type="checkbox" name="pinned" value="1" {% if donor.pinned %}checked{% endif %}> Закрепить</label>
       <button class="button button-ghost" type="submit">Сохранить</button>
       <button class="button donor-delete" type="submit" formaction="{{ url_for('admin.remove_donor', donor_id=donor.id) }}" formmethod="post" onclick="return confirm('Удалить этого донатера?')">Удалить</button>
     </form>

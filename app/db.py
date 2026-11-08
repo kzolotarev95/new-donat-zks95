@@ -49,6 +49,7 @@ CREATE TABLE IF NOT EXISTS donors (
     social_url TEXT NOT NULL DEFAULT '',
     total_amount TEXT NOT NULL DEFAULT '0',
     donations_count INTEGER NOT NULL DEFAULT 0,
+    pinned INTEGER NOT NULL DEFAULT 0,
     is_active INTEGER NOT NULL DEFAULT 1,
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL,
@@ -86,6 +87,8 @@ def init_db():
     donor_columns = {row["name"] for row in db.execute("PRAGMA table_info(donors)").fetchall()}
     if "social_url" not in donor_columns:
         db.execute("ALTER TABLE donors ADD COLUMN social_url TEXT NOT NULL DEFAULT ''")
+    if "pinned" not in donor_columns:
+        db.execute("ALTER TABLE donors ADD COLUMN pinned INTEGER NOT NULL DEFAULT 0")
     db.commit()
     _ensure_admin_from_env()
 
@@ -165,28 +168,28 @@ def donor_color(token):
 def list_donors(active_only=True, limit=60):
     where = "WHERE is_active = 1" if active_only else ""
     return get_db().execute(
-        f"SELECT * FROM donors {where} ORDER BY updated_at DESC, id DESC LIMIT ?", (limit,)
+        f"SELECT * FROM donors {where} ORDER BY pinned DESC, updated_at DESC, id DESC LIMIT ?", (limit,)
     ).fetchall()
 
 
-def create_donor(nickname, color="red", note="", total_amount="0", social_url=""):
+def create_donor(nickname, color="red", note="", total_amount="0", social_url="", pinned=0):
     if color not in DONOR_COLORS:
         color = "red"
     now = _now()
     cursor = get_db().execute(
-        "INSERT INTO donors(nickname, color, note, social_url, total_amount, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
-        (nickname, color, note, social_url, str(total_amount), now, now),
+        "INSERT INTO donors(nickname, color, note, social_url, total_amount, pinned, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+        (nickname, color, note, social_url, str(total_amount), int(bool(pinned)), now, now),
     )
     get_db().commit()
     return cursor.lastrowid
 
 
-def update_donor(donor_id, nickname, color, note, total_amount="0", social_url="", is_active=1):
+def update_donor(donor_id, nickname, color, note, total_amount="0", social_url="", pinned=0, is_active=1):
     if color not in DONOR_COLORS:
         color = "red"
     get_db().execute(
-        "UPDATE donors SET nickname = ?, color = ?, note = ?, social_url = ?, total_amount = ?, is_active = ?, updated_at = ? WHERE id = ?",
-        (nickname, color, note, social_url, str(total_amount), int(bool(is_active)), _now(), donor_id),
+        "UPDATE donors SET nickname = ?, color = ?, note = ?, social_url = ?, total_amount = ?, pinned = ?, is_active = ?, updated_at = ? WHERE id = ?",
+        (nickname, color, note, social_url, str(total_amount), int(bool(pinned)), int(bool(is_active)), _now(), donor_id),
     )
     get_db().commit()
 
