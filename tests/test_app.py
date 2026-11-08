@@ -1,4 +1,5 @@
 from app.db import create_donor, list_donors
+from app.settings import set_runtime_setting
 
 
 def test_healthcheck(client):
@@ -17,6 +18,7 @@ def test_donate_page_contains_donor_wall(client):
     body = response.get_data(as_text=True)
     assert "donor-wall" in body
     assert "Собираю полезные системы" not in body
+    assert "visual-effect-none" in body
 
 def test_donor_amount_and_local_avatar(app, client):
     with app.app_context():
@@ -33,6 +35,16 @@ def test_pinned_donor_is_listed_first(app):
         create_donor("Regular", "c001")
         create_donor("Pinned", "c002", pinned=1)
         assert [donor["nickname"] for donor in list_donors()] == ["Pinned", "Regular"]
+
+def test_visual_settings_are_applied_globally(app, client):
+    with app.app_context():
+        set_runtime_setting("VISUAL_EFFECT", "snow")
+        set_runtime_setting("VISUAL_EFFECT_SPEED", "fast")
+    response = client.get("/donate")
+    body = response.get_data(as_text=True)
+    assert "visual-effect-snow" in body
+    assert "visual-speed-fast" in body
+    assert "visual-layer" in body
 
 def test_missing_payment_config_is_explicit(client):
     response = client.post("/api/payments", json={"amount": "500"})
@@ -66,6 +78,16 @@ def test_admin_donors_page(client):
     assert "Добавить вручную" in response.get_data(as_text=True)
     assert "Сумма, ₽" in response.get_data(as_text=True)
     assert "Цвет 100" in response.get_data(as_text=True)
+
+def test_admin_visual_settings_page(client):
+    login = client.get("/admin/login")
+    token = login.get_data(as_text=True).split('name="csrf_token" value="')[1].split('"', 1)[0]
+    client.post("/admin/login", data={"csrf_token": token, "username": "admin", "password": "correct horse battery staple"})
+    response = client.get("/admin/settings")
+    body = response.get_data(as_text=True)
+    assert response.status_code == 200
+    assert "Глобальный эффект" in body
+    assert "Техно-сетка" in body
 
 def test_donate_does_not_require_recaptcha(app, client):
     app.config["RECAPTCHA_SECRET_KEY"] = "captcha-secret"

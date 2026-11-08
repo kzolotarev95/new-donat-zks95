@@ -14,7 +14,8 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
   {% block head %}{% endblock %}
 </head>
-<body>
+<body class="visual-effect-{{ visual_effect }} visual-speed-{{ visual_speed }}">
+  <div class="visual-layer" aria-hidden="true"></div>
   <div class="grain"></div>
   <header class="site-header">
     <a class="brand" href="{{ url_for('site.index') }}" aria-label="ZKS95 Developer">

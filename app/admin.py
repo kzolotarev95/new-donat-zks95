@@ -13,6 +13,7 @@ from .db import (DONOR_COLORS, count_payments, create_donor, delete_donor, get_a
 from .payments import fetch_payment
 from .security import admin_required, csrf_token, require_csrf
 from .settings import get_runtime_setting, set_runtime_setting
+from .visual import VISUAL_EFFECTS, VISUAL_SPEEDS, normalize_visual_effect, normalize_visual_speed
 from .captcha import site_key as recaptcha_site_key, verify as verify_recaptcha
 
 log = logging.getLogger(__name__)
@@ -242,25 +243,31 @@ def account():
 @admin_required
 def settings():
     fields = [
-        ("SITE_DOMAIN", "Домен сайта", False),
-        ("YOOKASSA_SHOP_ID", "YooKassa Shop ID", False),
-        ("YOOKASSA_SECRET_KEY", "YooKassa secret key", True),
-        ("YOOKASSA_RETURN_URL", "URL возврата YooKassa", False),
-        ("YOOKASSA_WEBHOOK_URL", "Webhook URL YooKassa", False),
-        ("YOOKASSA_WEBHOOK_SECRET", "Webhook HMAC secret", True),
-        ("RECAPTCHA_SITE_KEY", "Google reCAPTCHA site key", False),
-        ("RECAPTCHA_SECRET_KEY", "Google reCAPTCHA secret key", True),
+        ("SITE_DOMAIN", "Домен сайта", False, "text", ()),
+        ("YOOKASSA_SHOP_ID", "YooKassa Shop ID", False, "text", ()),
+        ("YOOKASSA_SECRET_KEY", "YooKassa secret key", True, "text", ()),
+        ("YOOKASSA_RETURN_URL", "URL возврата YooKassa", False, "text", ()),
+        ("YOOKASSA_WEBHOOK_URL", "Webhook URL YooKassa", False, "text", ()),
+        ("YOOKASSA_WEBHOOK_SECRET", "Webhook HMAC secret", True, "text", ()),
+        ("RECAPTCHA_SITE_KEY", "Google reCAPTCHA site key", False, "text", ()),
+        ("RECAPTCHA_SECRET_KEY", "Google reCAPTCHA secret key", True, "text", ()),
+        ("VISUAL_EFFECT", "Глобальный эффект", False, "select", tuple(VISUAL_EFFECTS.items())),
+        ("VISUAL_EFFECT_SPEED", "Скорость эффекта", False, "select", tuple(VISUAL_SPEEDS.items())),
     ]
     if request.method == "POST":
-        for key, _label, secret in fields:
+        for key, _label, secret, _kind, _options in fields:
             value = request.form.get(key, "").strip()
             if secret and not value:
                 continue
+            if key == "VISUAL_EFFECT":
+                value = normalize_visual_effect(value)
+            elif key == "VISUAL_EFFECT_SPEED":
+                value = normalize_visual_speed(value)
             set_runtime_setting(key, value)
         flash("Настройки сохранены. Новые платежи используют их сразу.", "success")
         return redirect(url_for("admin.settings"))
     values = {}
-    for key, _label, secret in fields:
+    for key, _label, secret, _kind, _options in fields:
         value = get_runtime_setting(key, current_app.config.get(key, ""))
         values[key] = "" if secret else value
     return render_template("admin/settings.html", fields=fields, values=values)
