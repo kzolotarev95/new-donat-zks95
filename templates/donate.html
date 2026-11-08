@@ -36,7 +36,8 @@
 <section class="donor-wall shell" aria-labelledby="donors-title">
   <div class="section-head"><div><p class="eyebrow">Community / Supporters</p><h2 id="donors-title">Спасибо тем,<br><em>кто рядом.</em></h2></div><span class="donor-wall-caption">Ники появляются после подтверждения платежа</span></div>
   <div class="donor-grid">
-    {% for donor in donors %}<article class="donor-card donor-{{ donor.color }}" style="--donor-accent: {{ donor_color(donor.color) }}"><span class="donor-avatar"><img src="{{ url_for('site.donor_avatar', donor_id=donor.id) }}" alt="" loading="lazy"></span><div><strong>{{ donor.nickname }}</strong><small>{{ donor.note or 'Поддержал разработку' }} · {{ donor.total_amount }} ₽</small></div><span class="donor-check">✓</span></article>{% else %}<div class="empty-state">Станьте первым донатером — ваше имя появится здесь после оплаты.</div>{% endfor %}
+    {% for donor in donors %}<article class="donor-card donor-{{ donor.color }}" style="--donor-accent: {{ donor_color(donor.color) }}"><span class="donor-avatar"><img src="{{ url_for('site.donor_avatar', donor_id=donor.id) }}" alt="" loading="lazy"></span><div>{% if donor.social_url %}<a class="donor-name" href="{{ donor.social_url }}" target="_blank" rel="noopener noreferrer nofollow">{{ donor.nickname }}</a>{% else %}<strong class="donor-name">{{ donor.nickname }}</strong>{% endif %}<small>{{ donor.note or 'Поддержал разработку' }} · {{ donor.total_amount }} ₽</small></div><span class="donor-check">✓</span></article>{% else %}<div class="empty-state">Станьте первым донатером — ваше имя появится здесь после оплаты.</div>{% endfor %}
   </div>
 </section>
 {% endblock %}
+{% block footer %}{% endblock %}

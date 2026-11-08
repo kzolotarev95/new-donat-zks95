@@ -30,11 +30,11 @@
     </nav>
   </header>
   <main>{% block content %}{% endblock %}</main>
-  <footer class="footer">
+  {% block footer %}<footer class="footer">
     <div><a class="brand" href="{{ url_for('site.index') }}"><span class="brand-mark">Z</span><span>ZKS95<span class="brand-muted">/DEV</span></span></a><p>Собираю полезные системы,<br>которые работают.</p></div>
     <div class="footer-links"><a href="{{ url_for('site.contact') }}">Contact</a><a href="{{ url_for('site.faq') }}">FAQ</a><a href="https://github.com/kzolotarev95" target="_blank" rel="noreferrer">GitHub ↗</a></div>
     <div class="footer-meta"><span>© {{ year }} ZKS95 Developer</span><span>Built with care / RU</span></div>
-  </footer>
+  </footer>{% endblock %}
   <script src="{{ url_for('static', filename='js/app.js') }}" defer></script>
   {% block scripts %}{% endblock %}
 </body>

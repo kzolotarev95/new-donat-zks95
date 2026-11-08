@@ -14,7 +14,9 @@ def test_root_opens_donate(client):
 def test_donate_page_contains_donor_wall(client):
     response = client.get("/donate")
     assert response.status_code == 200
-    assert "donor-wall" in response.get_data(as_text=True)
+    body = response.get_data(as_text=True)
+    assert "donor-wall" in body
+    assert "Собираю полезные системы" not in body
 
 def test_donor_amount_and_local_avatar(app, client):
     with app.app_context():
