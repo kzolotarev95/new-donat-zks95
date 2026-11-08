@@ -8,5 +8,11 @@ test -d "$APP_DIR" || { echo "Application is not installed: $APP_DIR" >&2; exit 
 TMP="$(mktemp)"
 trap 'rm -f "$TMP"' 0 HUP INT TERM
 curl -fsSL "$RAW?v=$(date +%s)" -o "$TMP"
-install -m 0755 "$TMP" "$APP_DIR/update.sh"
-exec "$APP_DIR/update.sh" </dev/tty
+if ! git -c safe.directory="$APP_DIR" -C "$APP_DIR" diff --quiet -- update.sh; then
+  BACKUP_DIR="/var/backups/new-donat-zks95"
+  mkdir -p "$BACKUP_DIR"
+  cp -a "$APP_DIR/update.sh" "$BACKUP_DIR/update-wrapper-$(date +%Y%m%d-%H%M%S).sh" 2>/dev/null || true
+  git -c safe.directory="$APP_DIR" -C "$APP_DIR" checkout -- update.sh
+fi
+chmod 0755 "$TMP"
+exec "$TMP" </dev/tty
