@@ -61,6 +61,9 @@ def test_not_found(client):
 
 def test_admin_login_and_dashboard(client):
     login = client.get("/admin/login")
+    body = login.get_data(as_text=True)
+    assert "Панель" not in body
+    assert "admin-login-card" in body
     token = login.get_data(as_text=True).split('name="csrf_token" value="')[1].split('"', 1)[0]
     response = client.post("/admin/login", data={"csrf_token": token, "username": "admin", "password": "correct horse battery staple"})
     assert response.status_code == 302
