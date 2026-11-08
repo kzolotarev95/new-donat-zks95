@@ -41,6 +41,18 @@ CREATE TABLE IF NOT EXISTS app_settings (
     is_secret INTEGER NOT NULL DEFAULT 0,
     updated_at TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS push_subscriptions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    endpoint TEXT NOT NULL UNIQUE,
+    p256dh TEXT NOT NULL,
+    auth TEXT NOT NULL,
+    user_agent TEXT NOT NULL DEFAULT '',
+    is_active INTEGER NOT NULL DEFAULT 1,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    last_error TEXT NOT NULL DEFAULT ''
+);
+CREATE INDEX IF NOT EXISTS idx_push_subscriptions_active ON push_subscriptions(is_active);
 CREATE TABLE IF NOT EXISTS donors (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     nickname TEXT NOT NULL UNIQUE COLLATE NOCASE,
@@ -258,6 +270,48 @@ def update_admin_account(user_id, username, password_hash=None):
 
 def mark_admin_login(user_id):
     get_db().execute("UPDATE admin_users SET last_login_at = ? WHERE id = ?", (_now(), user_id))
+    get_db().commit()
+
+
+def upsert_push_subscription(subscription, user_agent=""):
+    """Store a browser Push API subscription without retaining unrelated data."""
+    endpoint = str(subscription.get("endpoint") or "").strip()
+    keys = subscription.get("keys") or {}
+    p256dh = str(keys.get("p256dh") or "").strip()
+    auth = str(keys.get("auth") or "").strip()
+    if not endpoint.startswith("https://") or not p256dh or not auth:
+        raise ValueError("Некорректная push-подписка")
+    now = _now()
+    get_db().execute(
+        """INSERT INTO push_subscriptions(endpoint, p256dh, auth, user_agent, is_active, created_at, updated_at, last_error)
+           VALUES (?, ?, ?, ?, 1, ?, ?, '')
+           ON CONFLICT(endpoint) DO UPDATE SET p256dh=excluded.p256dh, auth=excluded.auth,
+             user_agent=excluded.user_agent, is_active=1, updated_at=excluded.updated_at, last_error=''""",
+        (endpoint, p256dh, auth, str(user_agent or "")[:300], now, now),
+    )
+    get_db().commit()
+    return endpoint
+
+
+def list_push_subscriptions(active_only=True):
+    where = "WHERE is_active = 1" if active_only else ""
+    return get_db().execute(f"SELECT * FROM push_subscriptions {where} ORDER BY updated_at DESC").fetchall()
+
+
+def count_push_subscriptions():
+    return get_db().execute("SELECT COUNT(*) AS n FROM push_subscriptions WHERE is_active = 1").fetchone()["n"]
+
+
+def delete_push_subscription(endpoint):
+    get_db().execute("DELETE FROM push_subscriptions WHERE endpoint = ?", (endpoint,))
+    get_db().commit()
+
+
+def mark_push_subscription_error(endpoint, message):
+    get_db().execute(
+        "UPDATE push_subscriptions SET last_error = ?, updated_at = ? WHERE endpoint = ?",
+        (str(message or "")[:500], _now(), endpoint),
+    )
     get_db().commit()
 
 def payment_stats():

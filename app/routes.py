@@ -10,6 +10,7 @@ from flask import Blueprint, Response, current_app, jsonify, redirect, render_te
 from .db import create_payment_record, donor_color, get_donor, get_payment, list_donors, record_donor_payment, update_payment
 from .github import fetch_repositories
 from .payments import create_payment, fetch_payment, normalize_amount
+from .push import notify_payment_success
 from .settings import get_runtime_setting
 
 bp = Blueprint("site", __name__)
@@ -173,6 +174,7 @@ def yookassa_webhook():
     update_payment(payment_id, status, json.loads(confirmed.json()), paid=paid)
     if paid and not was_paid:
         record_donor_payment(record["customer_nickname"], record["amount"])
+        notify_payment_success(record)
     return jsonify(ok=True)
 
 
@@ -181,6 +183,14 @@ def healthz():
     from .db import get_db
     get_db().execute("SELECT 1").fetchone()
     return jsonify(status="ok", service="new-donat-zks95")
+
+
+@bp.get("/service-worker.js")
+def service_worker():
+    response = current_app.send_static_file("sw.js")
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    response.headers["Service-Worker-Allowed"] = "/"
+    return response
 
 
 @bp.get("/contact")

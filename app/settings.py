@@ -6,6 +6,7 @@ from .security import decrypt_value, encrypt_value
 
 SECRET_KEYS = {
     "YOOKASSA_SECRET_KEY", "YOOKASSA_WEBHOOK_SECRET", "RECAPTCHA_SECRET_KEY",
+    "VAPID_PRIVATE_KEY",
 }
 
 def _now():

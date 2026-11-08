@@ -103,6 +103,34 @@ def test_admin_visual_settings_page(client):
     assert "Глобальный эффект" in body
     assert "Техно-сетка" in body
 
+def test_admin_notifications_and_subscription(client):
+    service_worker = client.get("/service-worker.js")
+    assert service_worker.status_code == 200
+    assert "showNotification" in service_worker.get_data(as_text=True)
+    login = client.get("/admin/login")
+    token = login.get_data(as_text=True).split('name="csrf_token" value="')[1].split('"', 1)[0]
+    client.post("/admin/login", data={"csrf_token": token, "username": "admin", "password": "correct horse battery staple"})
+    page = client.get("/admin/notifications")
+    assert page.status_code == 200
+    assert "Создать новые VAPID-ключи" in page.get_data(as_text=True)
+    token = page.get_data(as_text=True).split('data-csrf-token="')[1].split('"', 1)[0]
+    generated = client.post("/admin/notifications/generate-vapid", data={"csrf_token": token})
+    assert generated.status_code == 302
+    subscription = client.post(
+        "/admin/api/notifications/subscription",
+        json={"endpoint": "https://push.example.test/subscription", "keys": {"p256dh": "p256dh", "auth": "auth"}},
+        headers={"X-CSRF-Token": token},
+    )
+    assert subscription.status_code == 200
+    assert subscription.get_json()["subscriptions"] == 1
+    removed = client.delete(
+        "/admin/api/notifications/subscription",
+        json={"endpoint": "https://push.example.test/subscription"},
+        headers={"X-CSRF-Token": token},
+    )
+    assert removed.status_code == 200
+    assert removed.get_json()["subscriptions"] == 0
+
 def test_donate_does_not_require_recaptcha(app, client):
     app.config["RECAPTCHA_SECRET_KEY"] = "captcha-secret"
     response = client.post("/api/payments", json={"amount": "500"})

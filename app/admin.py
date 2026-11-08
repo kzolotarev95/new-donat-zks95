@@ -9,8 +9,9 @@ from functools import wraps
 from urllib.parse import urlparse
 from flask import Blueprint, flash, redirect, render_template, request, session, url_for, current_app, jsonify
 from werkzeug.security import check_password_hash, generate_password_hash
-from .db import (DONOR_COLORS, count_payments, create_donor, delete_donor, get_admin_user, get_admin_user_by_id, get_payment, get_db, list_donors, list_payments, mark_admin_login, payment_stats, record_donor_payment, update_admin_account, update_admin_password, update_donor, update_payment)
+from .db import (DONOR_COLORS, count_payments, count_push_subscriptions, create_donor, delete_donor, delete_push_subscription, get_admin_user, get_admin_user_by_id, get_payment, get_db, list_donors, list_payments, mark_admin_login, payment_stats, record_donor_payment, update_admin_account, update_admin_password, update_donor, update_payment, upsert_push_subscription)
 from .payments import fetch_payment
+from .push import generate_vapid_keys, notify_payment_success, push_settings, send_push
 from .security import admin_required, csrf_token, require_csrf
 from .settings import get_runtime_setting, set_runtime_setting
 from .visual import VISUAL_EFFECTS, VISUAL_SPEEDS, normalize_visual_effect, normalize_visual_speed
@@ -169,6 +170,7 @@ def refresh_payment(payment_id):
             update_payment(payment_id, confirmed.status, json.loads(confirmed.json()), confirmed.status == "succeeded")
             if confirmed.status == "succeeded" and not was_paid:
                 record_donor_payment(record["customer_nickname"], record["amount"])
+                notify_payment_success(record)
             flash(f"Статус обновлён: {confirmed.status}.", "success")
     except Exception:
         log.exception("Admin payment refresh failed")
@@ -236,6 +238,86 @@ def account():
             flash("Данные аккаунта сохранены.", "success")
             return redirect(url_for("admin.account"))
     return render_template("admin/account.html", user=user)
+
+
+@admin_bp.route("/notifications", methods=["GET", "POST"])
+@admin_required
+def notifications():
+    if request.method == "POST":
+        set_runtime_setting("PUSH_ENABLED", "1" if request.form.get("PUSH_ENABLED") == "1" else "0")
+        set_runtime_setting("PUSH_NOTIFY_PAYMENTS", "1" if request.form.get("PUSH_NOTIFY_PAYMENTS") == "1" else "0")
+        email = (request.form.get("VAPID_CLAIMS_EMAIL") or "").strip()
+        if email.startswith("mailto:"):
+            email = email[7:]
+        if email:
+            set_runtime_setting("VAPID_CLAIMS_EMAIL", email)
+        public = (request.form.get("VAPID_PUBLIC_KEY") or "").strip()
+        if public:
+            set_runtime_setting("VAPID_PUBLIC_KEY", public)
+        private = (request.form.get("VAPID_PRIVATE_KEY") or "").strip()
+        if private:
+            set_runtime_setting("VAPID_PRIVATE_KEY", private)
+        flash("Настройки push сохранены.", "success")
+        return redirect(url_for("admin.notifications"))
+    return render_template("admin/notifications.html", push=push_settings())
+
+
+@admin_bp.post("/notifications/generate-vapid")
+@admin_required
+def generate_vapid():
+    private_key, public = generate_vapid_keys()
+    set_runtime_setting("VAPID_PRIVATE_KEY", private_key)
+    set_runtime_setting("VAPID_PUBLIC_KEY", public)
+    flash("VAPID-ключи созданы. Укажите email и сохраните настройки.", "success")
+    return redirect(url_for("admin.notifications"))
+
+
+@admin_bp.post("/notifications/test")
+@admin_required
+def test_notification():
+    result = send_push(
+        {
+            "title": "Тестовое уведомление ZKS95",
+            "body": "Push-уведомления работают на этом устройстве.",
+            "icon": "/static/favicon.svg",
+            "badge": "/static/favicon.svg",
+            "tag": "push-test",
+            "data": {"url": "/admin/notifications"},
+        },
+        force=True,
+    )
+    if result["sent"]:
+        flash(f"Тестовый push отправлен: {result['sent']} устройств.", "success")
+    elif result["skipped"] == "no_subscriptions":
+        flash("Сначала подключите это устройство кнопкой «Включить на этом устройстве».", "error")
+    elif result["skipped"] == "not_configured":
+        flash("Сначала создайте VAPID-ключи, укажите email и сохраните настройки.", "error")
+    elif result["skipped"] == "dependency_missing":
+        flash("На сервере не установлен модуль pywebpush. Выполните обновление проекта.", "error")
+    else:
+        flash(f"Push не доставлен. Устройств: {result['failed']}.", "error")
+    return redirect(url_for("admin.notifications"))
+
+
+@admin_bp.post("/api/notifications/subscription")
+@admin_required
+def save_push_subscription():
+    data = request.get_json(silent=True) or {}
+    try:
+        endpoint = upsert_push_subscription(data, request.headers.get("User-Agent", ""))
+    except ValueError as exc:
+        return jsonify(error=str(exc)), 400
+    return jsonify(ok=True, endpoint=endpoint, subscriptions=count_push_subscriptions())
+
+
+@admin_bp.delete("/api/notifications/subscription")
+@admin_required
+def remove_push_subscription():
+    data = request.get_json(silent=True) or {}
+    endpoint = str(data.get("endpoint") or "").strip()
+    if endpoint:
+        delete_push_subscription(endpoint)
+    return jsonify(ok=True, subscriptions=count_push_subscriptions())
 
 
 @admin_bp.route("/settings", methods=["GET", "POST"])

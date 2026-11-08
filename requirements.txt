@@ -4,3 +4,4 @@ requests==2.32.3
 YooKassa==3.5.0
 python-dotenv==1.0.1
 cryptography==44.0.0
+pywebpush==2.0.3

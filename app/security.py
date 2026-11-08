@@ -32,7 +32,7 @@ def csrf_token():
 
 
 def require_csrf():
-    supplied = request.form.get("csrf_token", "")
+    supplied = request.form.get("csrf_token", "") or request.headers.get("X-CSRF-Token", "")
     if not supplied or not secrets.compare_digest(supplied, session.get("_csrf_token", "")):
         abort(400, description="Недействительный CSRF-токен")
 
