@@ -110,3 +110,7 @@ h2{font-size:clamp(1.55rem,3vw,2.45rem)!important;line-height:1.12;letter-spacin
 /* Bring the supporters wall closer to the checkout section. */
 .donate-page{padding-bottom:42px}.donor-wall{padding-top:4px}
 @media(max-width:760px){.donate-page{padding-bottom:34px}.donor-wall{padding-top:0}}
+
+/* Match the payment methods panel to the checkout button and center its content. */
+.donate-form .payment-banner{width:min(100%,275px);max-width:275px;margin:18px auto;text-align:center}.donate-form .payment-banner-top{justify-content:center;flex-wrap:wrap;gap:6px 8px}.donate-form .secure-label{margin-left:0}.donate-form .bank-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;justify-items:stretch}.donate-form .bank-chip{justify-content:center;gap:5px;padding:6px 5px;font-size:.58rem}.donate-form .payment-banner-foot{text-align:center}
+@media(max-width:760px){.donate-form .payment-banner{width:min(100%,275px);max-width:275px}.donate-form .payment-banner-top{font-size:.62rem}.donate-form .secure-label{font-size:.49rem}}
