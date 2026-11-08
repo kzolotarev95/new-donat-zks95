@@ -1,77 +1,40 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 IFS=$'\n\t'
-
-APP_NAME="new-donat-zks95"
-APP_USER="zks95"
-APP_DIR="/opt/${APP_NAME}"
-ETC_DIR="/etc/${APP_NAME}"
-DATA_DIR="/var/lib/${APP_NAME}"
-BACKUP_DIR="/var/backups/${APP_NAME}"
-SERVICE_NAME="${APP_NAME}.service"
-ALERT_SERVICE_NAME="${APP_NAME}-alert.service"
-NGINX_AVAILABLE="/etc/nginx/sites-available/${APP_NAME}.conf"
-NGINX_ENABLED="/etc/nginx/sites-enabled/${APP_NAME}.conf"
-SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-
+APP_NAME="new-donat-zks95"; APP_USER="zks95"; APP_DIR="/opt/${APP_NAME}"; ETC_DIR="/etc/${APP_NAME}"; DATA_DIR="/var/lib/${APP_NAME}"; BACKUP_DIR="/var/backups/${APP_NAME}"; LOG_DIR="/var/log/${APP_NAME}"; APP_PORT="8015"; SERVICE_NAME="${APP_NAME}.service"; ALERT_SERVICE_NAME="${APP_NAME}-alert.service"; SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 log(){ printf '\033[1;33m[install]\033[0m %s\n' "$*"; }
-fatal(){ printf '\033[1;31m[error]\033[0m %s\n' "$*" >&2; exit 1; }
-cleanup(){ rm -f "${TMP_NGINX:-}"; }
-trap cleanup EXIT
-
+warn(){ printf '\033[1;33m[warning]\033[0m %s\n' "$*" >&2; }
+fatal(){ printf '\033[1;31m[error]\033[0m %s\n' "$*" >&2; }
 [[ "${EUID}" -eq 0 ]] || fatal "Запустите установщик через sudo."
 [[ -f /etc/os-release ]] || fatal "Не удалось определить операционную систему."
 . /etc/os-release
 [[ "${ID:-}" == "ubuntu" ]] || fatal "Поддерживается Ubuntu 24.04/26.04 LTS. Обнаружено: ${PRETTY_NAME:-unknown}."
-[[ "${VERSION_ID%%.*}" == "24" || "${VERSION_ID%%.*}" == "26" ]] || log "Предупреждение: версия Ubuntu ${VERSION_ID:-unknown} не проверялась, продолжаю."
-
-if ! command -v git >/dev/null 2>&1; then :; fi
-if ! getent hosts github.com >/dev/null 2>&1; then fatal "GitHub недоступен из DNS. Проверьте сеть и повторите."; fi
-
-read -r -p "Домен сайта (например donate.example.com): " SITE_DOMAIN
+if [[ "${VERSION_ID%%.*}" != "24" && "${VERSION_ID%%.*}" != "26" ]]; then warn "Версия Ubuntu ${VERSION_ID:-unknown} не проверялась, продолжаю."; fi
+getent hosts github.com >/dev/null 2>&1 || fatal "GitHub недоступен из DNS. Проверьте сеть и повторите."
+ENV_FILE="${ETC_DIR}/.env"; EXISTING_DOMAIN=""
+if [[ -r "${ENV_FILE}" ]]; then EXISTING_DOMAIN="$(awk -F= '/^SITE_DOMAIN=/{print substr($0,index($0,$2)); exit}' "${ENV_FILE}" || true)"; fi
+if [[ -n "${EXISTING_DOMAIN}" ]]; then read -r -p "Домен сайта [${EXISTING_DOMAIN}]: " SITE_DOMAIN; SITE_DOMAIN="${SITE_DOMAIN:-${EXISTING_DOMAIN}}"; else read -r -p "Домен сайта (например donate.example.com): " SITE_DOMAIN; fi
 [[ "${SITE_DOMAIN}" =~ ^[A-Za-z0-9.-]+$ ]] || fatal "Некорректное доменное имя."
-read -r -p "Настроить HTTPS через Let's Encrypt сейчас? [y/N] " SETUP_SSL
-read -r -p "Email для Certbot (если HTTPS включён, можно оставить пустым): " CERTBOT_EMAIL
-
-log "Устанавливаю системные зависимости"
-export DEBIAN_FRONTEND=noninteractive
-WAITED=0
+read -r -p "Настроить HTTPS через Let's Encrypt сейчас? [y/N] " SETUP_SSL; CERTBOT_EMAIL=""
+if [[ "${SETUP_SSL,,}" == "y" || "${SETUP_SSL,,}" == "yes" ]]; then read -r -p "Email для Certbot (если HTTPS включён, можно оставить пустым): " CERTBOT_EMAIL; fi
+log "Устанавливаю системные зависимости"; export DEBIAN_FRONTEND=noninteractive; WAITED=0
 while fuser /var/lib/dpkg/lock-frontend /var/lib/dpkg/lock >/dev/null 2>&1; do
-  WAITED=$((WAITED + 1))
-  if (( WAITED > 60 )); then
-    fatal "Системный пакетный менеджер занят больше 5 минут. Проверьте unattended-upgrades и повторите."
-  fi
-  log "Ожидаю завершения фонового обновления Ubuntu (${WAITED}/60)"
-  sleep 5
+  WAITED=$((WAITED + 1)); (( WAITED <= 60 )) || fatal "Системный пакетный менеджер занят больше 5 минут. Проверьте unattended-upgrades и повторите."; log "Ожидаю завершения фонового обновления Ubuntu (${WAITED}/60)"; sleep 5
 done
-dpkg --configure -a
-apt-get update
-apt-get install -y python3 python3-venv python3-pip git nginx curl ca-certificates rsync sqlite3
-if [[ "${SETUP_SSL,,}" == "y" || "${SETUP_SSL,,}" == "yes" ]]; then
-  apt-get install -y certbot python3-certbot-nginx
-fi
-
+dpkg --configure -a; apt-get update; apt-get install -y openssl python3 python3-venv python3-pip git nginx curl ca-certificates rsync sqlite3
+if [[ "${SETUP_SSL,,}" == "y" || "${SETUP_SSL,,}" == "yes" ]]; then apt-get install -y certbot python3-certbot-nginx; fi
 CREATED_APP_USER=0
-if ! id -u "${APP_USER}" >/dev/null 2>&1; then
-  useradd --system --home-dir "${APP_DIR}" --shell /usr/sbin/nologin "${APP_USER}"
-  CREATED_APP_USER=1
-fi
-install -d -o "${APP_USER}" -g "${APP_USER}" -m 0755 "${APP_DIR}" "${DATA_DIR}" "${BACKUP_DIR}"
-install -d -o "${APP_USER}" -g "${APP_USER}" -m 0755 "/var/log/${APP_NAME}"
-install -d -o root -g root -m 0755 "${ETC_DIR}"
-if [[ "${CREATED_APP_USER}" -eq 1 ]]; then
-  install -m 0600 /dev/null "${ETC_DIR}/.user-created"
-fi
+if ! id -u "${APP_USER}" >/dev/null 2>&1; then useradd --system --home-dir "${APP_DIR}" --shell /usr/sbin/nologin "${APP_USER}"; CREATED_APP_USER=1; fi
+install -d -o "${APP_USER}" -g "${APP_USER}" -m 0755 "${APP_DIR}"
+install -d -o "${APP_USER}" -g "${APP_USER}" -m 0750 "${DATA_DIR}" "${LOG_DIR}"
+install -d -o root -g "${APP_USER}" -m 0750 "${ETC_DIR}"; install -d -o root -g root -m 0700 "${BACKUP_DIR}"
+if [[ "${CREATED_APP_USER}" -eq 1 ]]; then install -m 0600 /dev/null "${ETC_DIR}/.user-created"; fi
 log "Копирую приложение в ${APP_DIR}"
-rsync -a --exclude='.venv' --exclude='instance' --exclude='*.db' "${SCRIPT_DIR}/" "${APP_DIR}/"
-chown -R "${APP_USER}:${APP_USER}" "${APP_DIR}" "${DATA_DIR}"
-
-if [[ ! -f "${ETC_DIR}/.env" ]]; then
-  log "Создаю конфигурацию с безопасными правами"
-  read -r -p "YooKassa shop ID (можно задать позже): " SHOP_ID
-  read -r -s -p "YooKassa secret key (можно задать позже): " SECRET_KEY; printf '\n'
-  APP_SECRET="$(openssl rand -hex 32 2>/dev/null || python3 -c 'import secrets; print(secrets.token_hex(32))')"
-  cat > "${ETC_DIR}/.env" <<EOF
+rsync -a --delete --exclude='.venv' --exclude='instance' --exclude='*.db' --exclude='__pycache__' "${SCRIPT_DIR}/" "${APP_DIR}/"
+chown -R "${APP_USER}:${APP_USER}" "${APP_DIR}" "${DATA_DIR}" "${LOG_DIR}"
+if [[ ! -f "${ENV_FILE}" ]]; then
+  log "Создаю конфигурацию с безопасными правами"; read -r -p "YooKassa shop ID (можно задать позже): " SHOP_ID; read -r -s -p "YooKassa secret key (можно задать позже): " SECRET_KEY; printf '\n'; APP_SECRET="$(openssl rand -hex 32)"; umask 077
+  cat > "${ENV_FILE}" <<EOF
 APP_ENV=production
 APP_SECRET_KEY=${APP_SECRET}
 SITE_DOMAIN=${SITE_DOMAIN}
@@ -86,77 +49,59 @@ DATABASE_PATH=${DATA_DIR}/site.db
 PAYMENT_MIN_AMOUNT=100
 PAYMENT_MAX_AMOUNT=1000000
 PAYMENT_CURRENCY=RUB
+PORT=${APP_PORT}
 EOF
-  chown root:"${APP_USER}" "${ETC_DIR}/.env"
-  chmod 0600 "${ETC_DIR}/.env"
-else
-  log "Сохраняю существующий ${ETC_DIR}/.env"
-fi
-
+else log "Сохраняю существующий ${ENV_FILE}"; fi
+chown root:"${APP_USER}" "${ENV_FILE}"; chmod 0640 "${ENV_FILE}"
 log "Создаю виртуальное окружение и ставлю Python-зависимости"
-runuser -u "${APP_USER}" -- python3 -m venv "${APP_DIR}/.venv"
+if [[ ! -x "${APP_DIR}/.venv/bin/python" ]]; then runuser -u "${APP_USER}" -- python3 -m venv "${APP_DIR}/.venv"; fi
 runuser -u "${APP_USER}" -- "${APP_DIR}/.venv/bin/pip" install --upgrade pip
 runuser -u "${APP_USER}" -- "${APP_DIR}/.venv/bin/pip" install -r "${APP_DIR}/requirements.txt"
-cd "${APP_DIR}"
-DB_PATH="$(awk -F= '/^DATABASE_PATH=/{print substr($0, index($0,$2))}' "${ETC_DIR}/.env")"
-runuser -u "${APP_USER:-zks95}" -- env DATABASE_PATH="${DB_PATH}" "${APP_DIR}/.venv/bin/python" -c 'from app import create_app; app=create_app(); print("database ready")'
-ADMIN_COUNT="$(runuser -u "${APP_USER}" -- env DATABASE_PATH="${DB_PATH}" "${APP_DIR}/.venv/bin/python" -c 'from app import create_app; from app.db import get_db; app=create_app(); print(get_db().execute("SELECT COUNT(*) FROM admin_users").fetchone()[0])')"
-if [[ "${ADMIN_COUNT}" == "0" ]]; then
-  runuser -u "${APP_USER}" -- env DATABASE_PATH="${DB_PATH}" "${APP_DIR}/.venv/bin/python" "${APP_DIR}/scripts/create_admin.py" --default
-fi
-
+DB_PATH="$(awk -F= '/^DATABASE_PATH=/{print substr($0,index($0,$2)); exit}' "${ENV_FILE}")"; [[ -n "${DB_PATH}" ]] || DB_PATH="${DATA_DIR}/site.db"
+runuser -u "${APP_USER}" -- env DATABASE_PATH="${DB_PATH}" "${APP_DIR}/.venv/bin/python" - <<'PY'
+from app import create_app
+from app.db import get_db
+app = create_app()
+with app.app_context():
+    get_db().execute("SELECT 1").fetchone()
+print("database ready")
+PY
+ADMIN_COUNT="$(runuser -u "${APP_USER}" -- env DATABASE_PATH="${DB_PATH}" "${APP_DIR}/.venv/bin/python" - <<'PY'
+from app import create_app
+from app.db import get_db
+app = create_app()
+with app.app_context():
+    print(get_db().execute("SELECT COUNT(*) FROM admin_users").fetchone()[0])
+PY
+)"
+if [[ "${ADMIN_COUNT}" == "0" ]]; then runuser -u "${APP_USER}" -- env DATABASE_PATH="${DB_PATH}" "${APP_DIR}/.venv/bin/python" "${APP_DIR}/scripts/create_admin.py" --default; fi
 log "Устанавливаю systemd service"
 install -m 0644 "${APP_DIR}/config/systemd/${SERVICE_NAME}" "/etc/systemd/system/${SERVICE_NAME}"
 install -m 0644 "${APP_DIR}/config/systemd/${ALERT_SERVICE_NAME}" "/etc/systemd/system/${ALERT_SERVICE_NAME}"
-systemctl daemon-reload
-systemctl enable "${SERVICE_NAME}"
-systemctl restart "${SERVICE_NAME}"
-
-TMP_NGINX="$(mktemp)"
-sed "s/__SITE_DOMAIN__/${SITE_DOMAIN}/g" "${APP_DIR}/config/nginx/new-donat-zks95.conf.template" > "${TMP_NGINX}"
-if [[ -e "${NGINX_AVAILABLE}" ]]; then
-  cp -a "${NGINX_AVAILABLE}" "${BACKUP_DIR}/nginx-$(date +%Y%m%d-%H%M%S).conf"
-fi
-if [[ -L "${NGINX_ENABLED}" && "$(readlink -f "${NGINX_ENABLED}")" != "${NGINX_AVAILABLE}" ]]; then
-  cp -a "${NGINX_ENABLED}" "${BACKUP_DIR}/nginx-enabled-$(date +%Y%m%d-%H%M%S).link"
-  rm -f "${NGINX_ENABLED}"
-elif [[ -e "${NGINX_ENABLED}" && ! -L "${NGINX_ENABLED}" ]]; then
-  cp -a "${NGINX_ENABLED}" "${BACKUP_DIR}/nginx-enabled-$(date +%Y%m%d-%H%M%S).conf"
-fi
-if grep -RqsE "server_name[[:space:]].*${SITE_DOMAIN}([;[:space:]]|$)" /etc/nginx/sites-enabled 2>/dev/null; then
-  log "Предупреждение: домен уже встречается в конфигурации Nginx; проверьте конфликт server_name."
-fi
-install -m 0644 "${TMP_NGINX}" "${NGINX_AVAILABLE}"
-ln -sfn "${NGINX_AVAILABLE}" "${NGINX_ENABLED}"
-if ! nginx -t; then
-  fatal "Проверка Nginx не пройдена; исходная конфигурация сохранена в ${BACKUP_DIR}."
-fi
-systemctl reload nginx
-
+systemctl daemon-reload; systemctl enable "${SERVICE_NAME}"; systemctl enable "${ALERT_SERVICE_NAME}" >/dev/null 2>&1 || true; systemctl restart "${SERVICE_NAME}"
+log "Проверяю и согласую Nginx, не затрагивая чужие сайты"
+BACKUP_DIR="${BACKUP_DIR}/install-$(date +%Y%m%d-%H%M%S)"
+SITE_DOMAIN="${SITE_DOMAIN}" APP_DIR="${APP_DIR}" APP_PORT="${APP_PORT}" BACKUP_DIR="${BACKUP_DIR}" "${APP_DIR}/scripts/reconcile_nginx.sh"
 if [[ "${SETUP_SSL,,}" == "y" || "${SETUP_SSL,,}" == "yes" ]]; then
-  if [[ -n "${CERTBOT_EMAIL}" ]]; then
-    certbot --nginx -d "${SITE_DOMAIN}" --non-interactive --agree-tos --email "${CERTBOT_EMAIL}" --redirect || log "Certbot не завершился. Запустите certbot --nginx -d ${SITE_DOMAIN} после настройки DNS."
-  else
-    log "Email не указан. HTTPS не включён; запустите certbot --nginx -d ${SITE_DOMAIN} вручную."
-  fi
+  if [[ -n "${CERTBOT_EMAIL}" ]]; then certbot --nginx -d "${SITE_DOMAIN}" --non-interactive --agree-tos --email "${CERTBOT_EMAIL}" --redirect || warn "Certbot не завершился. Проверьте DNS/порт 80 и повторите certbot --nginx -d ${SITE_DOMAIN}."; else warn "Email не указан. HTTPS оставлен без автоматической выдачи сертификата."; fi
+  nginx -t || fatal "После настройки HTTPS проверка Nginx не пройдена."
 fi
-
-log "Проверяю health check"
-for _ in {1..15}; do
-  if curl --fail --silent --show-error http://127.0.0.1:8015/healthz >/dev/null; then break; fi
-  sleep 1
-done
-curl --fail --silent http://127.0.0.1:8015/healthz >/dev/null || { systemctl status "${SERVICE_NAME}" --no-pager || true; fatal "Приложение не ответило на health check."; }
-
+log "Проверяю запуск приложения и health check"; HEALTH_OK=0
+for _ in {1..20}; do if curl --fail --silent --show-error "http://127.0.0.1:${APP_PORT}/healthz" >/dev/null; then HEALTH_OK=1; break; fi; sleep 1; done
+if [[ "${HEALTH_OK}" -ne 1 ]]; then systemctl status "${SERVICE_NAME}" --no-pager || true; journalctl -u "${SERVICE_NAME}" -n 50 --no-pager || true; fatal "Приложение не ответило на health check."; fi
+ss -lnt | grep -q ":${APP_PORT}[[:space:]]" || fatal "Порт ${APP_PORT} не слушается."; systemctl is-enabled "${SERVICE_NAME}" >/dev/null || fatal "Сервис не включён в автозапуск."
 cat <<EOF
 
 Установка завершена.
   Сайт:       http://${SITE_DOMAIN}
+  Порт:       127.0.0.1:${APP_PORT}
   Сервис:     systemctl status ${SERVICE_NAME}
-  Конфиг:     ${ETC_DIR}/.env (права 0600, секреты не попадают в Git)
+  Уведомления: ${ALERT_SERVICE_NAME} (OnFailure/startup push)
+  Конфиг:     ${ENV_FILE} (права 0640, секреты не попадают в Git)
   База:       ${DATA_DIR}/site.db
   Обновление: sudo ${APP_DIR}/update.sh
   Удаление:   sudo ${APP_DIR}/uninstall.sh
+  Бэкап Nginx: ${BACKUP_DIR}
 
 Если DNS ещё не настроен, создайте A-запись ${SITE_DOMAIN} на IP этого VPS.
 Webhook ЮKassa: https://${SITE_DOMAIN}/webhooks/yookassa
