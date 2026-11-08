@@ -19,7 +19,7 @@
   <div class="panel-head"><h2>Список донатеров</h2><span class="muted">Цвет ника отображается на Donate</span></div>
   <div class="donor-admin-list">
   {% for donor in donors %}
-    <form class="donor-admin-row" method="post" action="{{ url_for('admin.edit_donor', donor_id=donor.id) }}">
+    <form class="donor-admin-row{% if donor.pinned %} is-pinned{% endif %}" method="post" action="{{ url_for('admin.edit_donor', donor_id=donor.id) }}">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <div class="donor-admin-name"><span class="donor-swatch donor-{{ donor.color }}" style="--donor-accent: {{ donor_color(donor.color) }}"></span><strong>{{ donor.nickname }}</strong><small>{{ donor.donations_count }} платеж(ей) · {{ donor.total_amount }} ₽</small></div>
       <input name="nickname" value="{{ donor.nickname }}" maxlength="64" required>

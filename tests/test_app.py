@@ -52,6 +52,13 @@ def test_pinned_donor_is_listed_first(app):
         create_donor("Pinned", "c002", pinned=1)
         assert [donor["nickname"] for donor in list_donors()] == ["Pinned", "Regular"]
 
+def test_pinned_donor_has_distinct_public_card(app, client):
+    with app.app_context():
+        create_donor("Pinned", "c002", pinned=1)
+    body = client.get("/donate").get_data(as_text=True)
+    assert 'class="donor-card donor-c002 is-pinned"' in body
+    assert 'data-pinned="true"' in body
+
 def test_visual_settings_are_applied_globally(app, client):
     with app.app_context():
         set_runtime_setting("VISUAL_EFFECT", "snow")
