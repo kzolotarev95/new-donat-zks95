@@ -109,6 +109,8 @@ def test_admin_visual_settings_page(client):
     assert "Техно-сетка" in body
     assert "Google reCAPTCHA" in body
     assert "YooKassa" in body
+    assert "Бэкап и перенос" in body
+    assert "Скачать список" in body
 
 def test_admin_donor_backup_download_and_import(app, client):
     login = client.get("/admin/login")
