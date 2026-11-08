@@ -7,7 +7,8 @@ import sqlite3
 from decimal import Decimal, InvalidOperation
 from functools import wraps
 from urllib.parse import urlparse
-from flask import Blueprint, flash, redirect, render_template, request, session, url_for, current_app, jsonify
+from io import BytesIO
+from flask import Blueprint, flash, redirect, render_template, request, session, url_for, current_app, jsonify, send_file
 from werkzeug.security import check_password_hash, generate_password_hash
 from .db import (DONOR_COLORS, count_payments, count_push_subscriptions, create_donor, delete_donor, delete_push_subscription, get_admin_user, get_admin_user_by_id, get_payment, get_db, list_donors, list_payments, mark_admin_login, payment_stats, record_donor_payment, update_admin_account, update_admin_password, update_donor, update_payment, upsert_push_subscription)
 from .payments import fetch_payment
@@ -16,6 +17,7 @@ from .security import admin_required, csrf_token, require_csrf
 from .settings import get_runtime_setting, set_runtime_setting
 from .visual import VISUAL_EFFECTS, VISUAL_SPEEDS, normalize_visual_effect, normalize_visual_speed
 from .captcha import site_key as recaptcha_site_key, verify as verify_recaptcha
+from .backup import export_backup, import_backup
 
 log = logging.getLogger(__name__)
 admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
@@ -320,38 +322,88 @@ def remove_push_subscription():
     return jsonify(ok=True, subscriptions=count_push_subscriptions())
 
 
+@admin_bp.get("/backup")
+@admin_required
+def backup_page():
+    return render_template("admin/backup.html")
+
+
+@admin_bp.get("/backup/download")
+@admin_required
+def backup_download():
+    kind = request.args.get("kind", "donors").strip().lower()
+    if kind not in {"donors", "full"}:
+        return jsonify(error="Неизвестный тип бэкапа"), 400
+    content = json.dumps(export_backup(kind), ensure_ascii=False, indent=2).encode("utf-8")
+    filename = f"new-donat-zks95-{kind}-backup.json"
+    return send_file(BytesIO(content), mimetype="application/json", as_attachment=True, download_name=filename)
+
+
+@admin_bp.post("/backup/import")
+@admin_required
+def backup_import():
+    uploaded = request.files.get("backup_file")
+    if not uploaded or not uploaded.filename:
+        flash("Выберите JSON-файл бэкапа.", "error")
+        return redirect(url_for("admin.backup_page"))
+    raw = uploaded.read(10 * 1024 * 1024 + 1)
+    if len(raw) > 10 * 1024 * 1024:
+        flash("Файл бэкапа слишком большой (максимум 10 МБ).", "error")
+        return redirect(url_for("admin.backup_page"))
+    try:
+        payload = json.loads(raw.decode("utf-8"))
+        kind = payload.get("kind")
+        if kind == "full" and request.form.get("confirm_full") != "1":
+            raise ValueError("Для полного восстановления подтвердите замену текущих данных.")
+        result = import_backup(payload, replace_donors=request.form.get("replace_donors") == "1")
+        flash(f"Бэкап загружен: {result['message']}", "success")
+    except (UnicodeDecodeError, json.JSONDecodeError, ValueError) as exc:
+        flash(f"Не удалось загрузить бэкап: {exc}", "error")
+    return redirect(url_for("admin.backup_page"))
+
+
 @admin_bp.route("/settings", methods=["GET", "POST"])
 @admin_required
 def settings():
-    fields = [
-        ("SITE_DOMAIN", "Домен сайта", False, "text", ()),
-        ("YOOKASSA_SHOP_ID", "YooKassa Shop ID", False, "text", ()),
-        ("YOOKASSA_SECRET_KEY", "YooKassa secret key", True, "text", ()),
-        ("YOOKASSA_RETURN_URL", "URL возврата YooKassa", False, "text", ()),
-        ("YOOKASSA_WEBHOOK_URL", "Webhook URL YooKassa", False, "text", ()),
-        ("YOOKASSA_WEBHOOK_SECRET", "Webhook HMAC secret", True, "text", ()),
-        ("RECAPTCHA_SITE_KEY", "Google reCAPTCHA site key", False, "text", ()),
-        ("RECAPTCHA_SECRET_KEY", "Google reCAPTCHA secret key", True, "text", ()),
-        ("VISUAL_EFFECT", "Глобальный эффект", False, "select", tuple(VISUAL_EFFECTS.items())),
-        ("VISUAL_EFFECT_SPEED", "Скорость эффекта", False, "select", tuple(VISUAL_SPEEDS.items())),
+    sections = [
+        ("Сайт", [
+            ("SITE_DOMAIN", "Домен сайта", False, "text", ()),
+        ]),
+        ("YooKassa", [
+            ("YOOKASSA_SHOP_ID", "Shop ID", False, "text", ()),
+            ("YOOKASSA_SECRET_KEY", "Secret key", True, "text", ()),
+            ("YOOKASSA_RETURN_URL", "URL возврата", False, "text", ()),
+            ("YOOKASSA_WEBHOOK_URL", "Webhook URL", False, "text", ()),
+            ("YOOKASSA_WEBHOOK_SECRET", "Webhook HMAC secret", True, "text", ()),
+        ]),
+        ("Google reCAPTCHA", [
+            ("RECAPTCHA_SITE_KEY", "Site key", False, "text", ()),
+            ("RECAPTCHA_SECRET_KEY", "Secret key", True, "text", ()),
+        ]),
+        ("Глобальный эффект", [
+            ("VISUAL_EFFECT", "Эффект", False, "select", tuple(VISUAL_EFFECTS.items())),
+            ("VISUAL_EFFECT_SPEED", "Скорость", False, "select", tuple(VISUAL_SPEEDS.items())),
+        ]),
     ]
     if request.method == "POST":
-        for key, _label, secret, _kind, _options in fields:
-            value = request.form.get(key, "").strip()
-            if secret and not value:
-                continue
-            if key == "VISUAL_EFFECT":
-                value = normalize_visual_effect(value)
-            elif key == "VISUAL_EFFECT_SPEED":
-                value = normalize_visual_speed(value)
-            set_runtime_setting(key, value)
+        for _section, fields in sections:
+            for key, _label, secret, _kind, _options in fields:
+                value = request.form.get(key, "").strip()
+                if secret and not value:
+                    continue
+                if key == "VISUAL_EFFECT":
+                    value = normalize_visual_effect(value)
+                elif key == "VISUAL_EFFECT_SPEED":
+                    value = normalize_visual_speed(value)
+                set_runtime_setting(key, value)
         flash("Настройки сохранены. Новые платежи используют их сразу.", "success")
         return redirect(url_for("admin.settings"))
     values = {}
-    for key, _label, secret, _kind, _options in fields:
-        value = get_runtime_setting(key, current_app.config.get(key, ""))
-        values[key] = "" if secret else value
-    return render_template("admin/settings.html", fields=fields, values=values)
+    for _section, fields in sections:
+        for key, _label, secret, _kind, _options in fields:
+            value = get_runtime_setting(key, current_app.config.get(key, ""))
+            values[key] = "" if secret else value
+    return render_template("admin/settings.html", sections=sections, values=values)
 
 
 @admin_bp.get("/api/summary")

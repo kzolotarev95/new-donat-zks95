@@ -1,3 +1,6 @@
+from io import BytesIO
+import json
+
 from app.db import create_donor, list_donors
 from app.settings import set_runtime_setting
 
@@ -102,6 +105,33 @@ def test_admin_visual_settings_page(client):
     assert response.status_code == 200
     assert "Глобальный эффект" in body
     assert "Техно-сетка" in body
+    assert "Google reCAPTCHA" in body
+    assert "YooKassa" in body
+
+def test_admin_donor_backup_download_and_import(app, client):
+    login = client.get("/admin/login")
+    token = login.get_data(as_text=True).split('name="csrf_token" value="')[1].split('"', 1)[0]
+    client.post("/admin/login", data={"csrf_token": token, "username": "admin", "password": "correct horse battery staple"})
+    page = client.get("/admin/backup")
+    assert page.status_code == 200
+    assert "Скачать полный бэкап" in page.get_data(as_text=True)
+    token = page.get_data(as_text=True).split('name="csrf_token" value="')[1].split('"', 1)[0]
+    donor_backup = client.get("/admin/backup/download?kind=donors")
+    assert donor_backup.status_code == 200
+    assert donor_backup.get_json()["kind"] == "donors"
+    full_backup = client.get("/admin/backup/download?kind=full")
+    assert full_backup.status_code == 200
+    assert full_backup.get_json()["kind"] == "full"
+    assert "warning" in full_backup.get_json()
+    payload = {"format": "zks95-backup", "version": 1, "kind": "donors", "donors": [{"nickname": "Imported", "color": "c001", "total_amount": "42", "is_active": 1}]}
+    imported = client.post(
+        "/admin/backup/import",
+        data={"csrf_token": token, "backup_file": (BytesIO(json.dumps(payload).encode()), "donors.json")},
+        content_type="multipart/form-data",
+    )
+    assert imported.status_code == 302
+    with app.app_context():
+        assert any(row["nickname"] == "Imported" for row in list_donors(active_only=False))
 
 def test_admin_notifications_and_subscription(client):
     service_worker = client.get("/service-worker.js")
