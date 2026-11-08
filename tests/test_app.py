@@ -147,6 +147,7 @@ def test_admin_notifications_and_subscription(client):
     page = client.get("/admin/notifications")
     assert page.status_code == 200
     assert "Создать новые VAPID-ключи" in page.get_data(as_text=True)
+    assert "Оповещать о запуске и восстановлении сервера" in page.get_data(as_text=True)
     token = page.get_data(as_text=True).split('data-csrf-token="')[1].split('"', 1)[0]
     generated = client.post("/admin/notifications/generate-vapid", data={"csrf_token": token})
     assert generated.status_code == 302
@@ -170,6 +171,20 @@ def test_donate_does_not_require_recaptcha(app, client):
     response = client.post("/api/payments", json={"amount": "500"})
     assert response.status_code == 503
     assert "не настроена" in response.get_json()["error"]
+
+def test_public_nav_hides_about(client):
+    body = client.get("/donate").get_data(as_text=True)
+    assert ">About</a>" not in body
+
+def test_system_event_push_setting(app, monkeypatch):
+    from app.push import notify_service_event
+    from app.settings import set_runtime_setting
+
+    with app.app_context():
+        set_runtime_setting("PUSH_NOTIFY_SYSTEM", "1")
+        monkeypatch.setattr("app.push.send_push", lambda payload: {"sent": 1, "failed": 0, "skipped": ""})
+        result = notify_service_event("startup")
+    assert result["sent"] == 1
 
 def test_admin_login_renders_recaptcha_when_configured(app, client):
     app.config["RECAPTCHA_SITE_KEY"] = "site-key"

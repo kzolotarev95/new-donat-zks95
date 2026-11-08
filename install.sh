@@ -9,6 +9,7 @@ ETC_DIR="/etc/${APP_NAME}"
 DATA_DIR="/var/lib/${APP_NAME}"
 BACKUP_DIR="/var/backups/${APP_NAME}"
 SERVICE_NAME="${APP_NAME}.service"
+ALERT_SERVICE_NAME="${APP_NAME}-alert.service"
 NGINX_AVAILABLE="/etc/nginx/sites-available/${APP_NAME}.conf"
 NGINX_ENABLED="/etc/nginx/sites-enabled/${APP_NAME}.conf"
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
@@ -106,6 +107,7 @@ fi
 
 log "Устанавливаю systemd service"
 install -m 0644 "${APP_DIR}/config/systemd/${SERVICE_NAME}" "/etc/systemd/system/${SERVICE_NAME}"
+install -m 0644 "${APP_DIR}/config/systemd/${ALERT_SERVICE_NAME}" "/etc/systemd/system/${ALERT_SERVICE_NAME}"
 systemctl daemon-reload
 systemctl enable "${SERVICE_NAME}"
 systemctl restart "${SERVICE_NAME}"

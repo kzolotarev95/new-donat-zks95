@@ -248,6 +248,7 @@ def notifications():
     if request.method == "POST":
         set_runtime_setting("PUSH_ENABLED", "1" if request.form.get("PUSH_ENABLED") == "1" else "0")
         set_runtime_setting("PUSH_NOTIFY_PAYMENTS", "1" if request.form.get("PUSH_NOTIFY_PAYMENTS") == "1" else "0")
+        set_runtime_setting("PUSH_NOTIFY_SYSTEM", "1" if request.form.get("PUSH_NOTIFY_SYSTEM") == "1" else "0")
         email = (request.form.get("VAPID_CLAIMS_EMAIL") or "").strip()
         if email.startswith("mailto:"):
             email = email[7:]

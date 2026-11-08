@@ -1,0 +1,18 @@
+[Unit]
+Description=ZKS95 Developer service event push
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=zks95
+Group=zks95
+WorkingDirectory=/opt/new-donat-zks95
+EnvironmentFile=/etc/new-donat-zks95/.env
+ExecStart=/opt/new-donat-zks95/.venv/bin/python /opt/new-donat-zks95/scripts/notify_service_event.py failure
+PrivateTmp=true
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/new-donat-zks95
+ReadWritePaths=/var/log/new-donat-zks95

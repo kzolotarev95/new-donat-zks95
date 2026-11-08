@@ -50,6 +50,10 @@ def payment_notifications_enabled():
     return get_runtime_setting("PUSH_NOTIFY_PAYMENTS", "1").strip().lower() in {"1", "true", "yes", "on"}
 
 
+def system_notifications_enabled():
+    return get_runtime_setting("PUSH_NOTIFY_SYSTEM", "1").strip().lower() in {"1", "true", "yes", "on"}
+
+
 def push_settings():
     configured_email = get_runtime_setting("VAPID_CLAIMS_EMAIL", "").strip()
     if configured_email.startswith("mailto:"):
@@ -57,6 +61,7 @@ def push_settings():
     return {
         "enabled": push_enabled(),
         "notify_payments": payment_notifications_enabled(),
+        "notify_system": system_notifications_enabled(),
         "public_key": public_key(),
         "claims_email": configured_email,
         "configured": bool(public_key() and get_runtime_setting("VAPID_PRIVATE_KEY", "").strip() and claims_email()),
@@ -132,4 +137,34 @@ def notify_payment_success(payment):
         )
     except Exception:
         log.exception("Payment push notification failed")
+        return {"sent": 0, "failed": 1, "skipped": "delivery_error"}
+
+
+def notify_service_event(event):
+    """Notify the administrator when the site service starts or fails.
+
+    A VPS that is powered off cannot deliver a push itself. The startup event
+    therefore confirms recovery after a reboot, while the failure event covers
+    systemd failures when the operating system is still reachable.
+    """
+    if not system_notifications_enabled():
+        return {"sent": 0, "failed": 0, "skipped": "system_notifications_disabled"}
+    messages = {
+        "startup": ("Сервер снова онлайн", "ZKS95 Developer запущен и готов принимать платежи."),
+        "failure": ("Сервис сайта остановлен", "systemd обнаружил ошибку сервиса ZKS95 Developer."),
+    }
+    title, body = messages.get(event, ("Событие сервера", "На сервере произошло системное событие."))
+    try:
+        return send_push(
+            {
+                "title": title,
+                "body": body,
+                "icon": "/static/favicon.svg",
+                "badge": "/static/favicon.svg",
+                "tag": f"server-{event}",
+                "data": {"url": "/admin/notifications"},
+            }
+        )
+    except Exception:
+        log.exception("Service event push notification failed")
         return {"sent": 0, "failed": 1, "skipped": "delivery_error"}

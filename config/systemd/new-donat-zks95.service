@@ -2,6 +2,7 @@
 Description=ZKS95 Developer donation site
 After=network-online.target
 Wants=network-online.target
+OnFailure=new-donat-zks95-alert.service
 
 [Service]
 Type=exec
@@ -12,6 +13,7 @@ Group=zks95
 WorkingDirectory=/opt/new-donat-zks95
 EnvironmentFile=/etc/new-donat-zks95/.env
 ExecStart=/opt/new-donat-zks95/.venv/bin/gunicorn --workers 2 --bind 127.0.0.1:8015 --access-logfile - --error-logfile - wsgi:app
+ExecStartPost=-/opt/new-donat-zks95/.venv/bin/python /opt/new-donat-zks95/scripts/notify_service_event.py startup
 Restart=always
 RestartSec=5
 PrivateTmp=true
