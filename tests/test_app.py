@@ -18,6 +18,7 @@ def test_donate_page_contains_donor_wall(client):
     body = response.get_data(as_text=True)
     assert "donor-wall" in body
     assert "Собираю полезные системы" not in body
+    assert "Ники появляются после подтверждения платежа" not in body
     assert "visual-effect-none" in body
 
 def test_donor_amount_and_local_avatar(app, client):
