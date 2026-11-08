@@ -10,14 +10,18 @@ STAMP="$(date +%Y%m%d-%H%M%S)"
 
 mkdir -p "${BACKUP_DIR}"
 matches_domain(){ grep -Eiq "server_name[[:space:]].*${SITE_DOMAIN}([;[:space:]]|$)" "$1"; }
-owned_config(){ grep -Eiq 'Managed by new-donat-zks95|new-donat-zks95|ZKS95 Developer|proxy_pass[[:space:]]+http://127\.0\.0\.1:(8000|8015)' "$1"; }
+owned_config(){
+  local file="$1" entry="${2:-$1}"
+  grep -Eiq 'Managed by new-donat-zks95|new-donat-zks95|ZKS95 Developer' "${file}" || \
+    basename "${entry}" | grep -Eiq '^(byzks95-developer-li|new-donat-zks95)(\.conf)?$'
+}
 
 shopt -s nullglob
 for entry in /etc/nginx/sites-enabled/* /etc/nginx/conf.d/*; do
   [[ -e "${entry}" || -L "${entry}" ]] || continue
   target="$(readlink -f "${entry}" 2>/dev/null || printf '%s' "${entry}")"
   [[ -f "${target}" ]] || continue
-  if matches_domain "${target}" && owned_config "${target}"; then
+  if matches_domain "${target}" && owned_config "${target}" "${entry}"; then
     cp -a "${entry}" "${BACKUP_DIR}/nginx-uninstall-${STAMP}-$(basename "${entry}")" 2>/dev/null || true
     rm -rf "${entry}"
   fi

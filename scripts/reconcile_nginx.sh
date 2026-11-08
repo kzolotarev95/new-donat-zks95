@@ -26,7 +26,9 @@ matches_domain(){
 }
 
 owned_config(){
-  grep -Eiq 'Managed by new-donat-zks95|new-donat-zks95|ZKS95 Developer|proxy_pass[[:space:]]+http://127\.0\.0\.1:(8000|8015)' "$1"
+  local file="$1" entry="${2:-$1}"
+  grep -Eiq 'Managed by new-donat-zks95|new-donat-zks95|ZKS95 Developer' "${file}" || \
+    basename "${entry}" | grep -Eiq '^(byzks95-developer-li|new-donat-zks95)(\.conf)?$'
 }
 
 save_entry(){
@@ -72,7 +74,7 @@ for entry in /etc/nginx/sites-enabled/* /etc/nginx/conf.d/*; do
   target="$(readlink -f "${entry}" 2>/dev/null || printf '%s' "${entry}")"
   [[ -f "${target}" ]] || continue
   if matches_domain "${target}"; then
-    if ! owned_config "${target}"; then
+    if ! owned_config "${target}" "${entry}"; then
       fatal "Обнаружен чужой Nginx-конфиг с server_name ${SITE_DOMAIN}: ${entry}. Он не изменён."
     fi
     [[ -n "${SOURCE_CONFIG}" ]] || SOURCE_CONFIG="${target}"
@@ -104,14 +106,14 @@ fi
 
 if [[ -e "${NGINX_ENABLED}" || -L "${NGINX_ENABLED}" ]]; then
   target="$(readlink -f "${NGINX_ENABLED}" 2>/dev/null || printf '%s' "${NGINX_ENABLED}")"
-  if ! owned_config "${target}"; then
+  if ! owned_config "${target}" "${NGINX_ENABLED}"; then
     fatal "${NGINX_ENABLED} существует и не принадлежит проекту."
   fi
   rm -rf "${NGINX_ENABLED}"
 fi
 if [[ -L "${NGINX_AVAILABLE}" ]]; then
   target="$(readlink -f "${NGINX_AVAILABLE}" 2>/dev/null || printf '%s' "${NGINX_AVAILABLE}")"
-  owned_config "${target}" || fatal "${NGINX_AVAILABLE} является чужой ссылкой и не изменён."
+  owned_config "${target}" "${NGINX_AVAILABLE}" || fatal "${NGINX_AVAILABLE} является чужой ссылкой и не изменён."
   rm -f "${NGINX_AVAILABLE}"
 fi
 if [[ -e "${NGINX_AVAILABLE}" ]] && ! owned_config "${NGINX_AVAILABLE}"; then
