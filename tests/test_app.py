@@ -26,6 +26,25 @@ def test_donate_page_contains_donor_wall(client):
     assert '<meta property="og:title" content="ZKS95 Developer Donate">' in body
     assert "apple-touch-icon.png" in body
     assert "visual-effect-none" in body
+    assert "Золотарев Кирилл Сергеевич" in body
+    assert "182501591471" in body
+    assert 'class="footer footer-compact"' in body
+    assert 'href="/requisites"' in body
+    assert "не является покупкой товара" in body
+
+def test_recipient_and_services_are_public(client):
+    details = client.get("/requisites")
+    assert details.status_code == 200
+    body = details.get_data(as_text=True)
+    assert "Золотарев Кирилл Сергеевич" in body
+    assert "Самозанятый (плательщик налога на профессиональный доход)" in body
+    assert "182501591471" in body
+    assert 'href="/services"' in body
+    services = client.get("/services")
+    assert services.status_code == 200
+    body = services.get_data(as_text=True)
+    assert "стоимость, сроки и порядок оплаты" in body
+    assert 'href="/requisites"' in body
 
 def test_public_navigation_and_contact_copy(client):
     home = client.get("/")

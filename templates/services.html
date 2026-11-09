@@ -1,1 +1,41 @@
-{% extends "base.html" %}{% block title %}Services — ZKS95 Developer{% endblock %}{% block content %}<section class="page-hero shell"><p class="eyebrow">Services / What I do</p><h1>От идеи<br><em>до работающего сервиса.</em></h1><p class="page-lead">Помогаю превращать технические задачи в решения, которые можно поддерживать и масштабировать.</p></section><section class="shell services-grid"><article class="service-card"><span>01</span><h3>Backend & API</h3><p>Надёжные сервисы на Python, REST API, интеграции и модели данных с ясными контрактами.</p></article><article class="service-card"><span>02</span><h3>DevOps & Linux</h3><p>Установка на VPS, systemd, Nginx, резервное копирование, обновления и безопасная эксплуатация.</p></article><article class="service-card"><span>03</span><h3>Open source</h3><p>Разбор задач, вклад в существующие проекты и инструменты, которыми может воспользоваться сообщество.</p></article></section>{% endblock %}
+{% extends "base.html" %}
+{% block title %}Услуги разработчика — ZKS95 Developer{% endblock %}
+{% block meta_description %}Услуги Золотарева Кирилла Сергеевича: разработка программного обеспечения, техническая поддержка, настройка Linux и доработка авторских проектов. Стоимость и сроки согласуются до оплаты.{% endblock %}
+{% block content %}
+<section class="page-hero shell">
+  <p class="eyebrow">Services / Услуги разработчика</p>
+  <h1>От идеи<br><em>до работающего сервиса.</em></h1>
+  <p class="page-lead">Разработка, техническая поддержка и развитие авторских проектов. Исполнитель — {{ payment_recipient.name }}, самозанятый.</p>
+</section>
+<section class="shell services-grid services-overview" aria-label="Описание услуг">
+  <article class="service-card">
+    <span>01 / Разработка</span>
+    <h3>Программное обеспечение и API</h3>
+    <p>Создание backend-сервисов на Python, REST API, интеграций и инструментов автоматизации. Проектирование базы данных и реализация согласованных функций.</p>
+  </article>
+  <article class="service-card">
+    <span>02 / Техническая поддержка</span>
+    <h3>Linux, VPS и сопровождение</h3>
+    <p>Настройка сервисов на VPS, Nginx и systemd, диагностика и исправление ошибок, обновления, резервное копирование и сопровождение программных решений.</p>
+  </article>
+  <article class="service-card">
+    <span>03 / Авторские проекты</span>
+    <h3>Доработки и развитие</h3>
+    <p>Разработка новых возможностей, адаптация и исправления в авторских open-source проектах, в том числе инструментах для OpenWrt. Объём доработок согласуется индивидуально.</p>
+  </article>
+</section>
+<section class="shell service-terms" aria-labelledby="service-payment-title">
+  <article class="recipient-card">
+    <h2 id="service-payment-title">Как заказать и оплатить услуги</h2>
+    <p>Напишите в Telegram и опишите задачу. До оплаты мы согласуем содержание работы, ожидаемый результат, стоимость, сроки и порядок оплаты. Цена зависит от объёма и сложности задачи; фиксированных тарифов на сайте нет.</p>
+    <p>Платежи за услуги разработки, техническую поддержку и развитие авторских проектов принимает {{ payment_recipient.name }}. Реквизиты и контакт для вопросов о платежах доступны на странице <a href="{{ url_for('site.requisites') }}">«Информация об исполнителе»</a>.</p>
+    <a class="button button-gold" href="{{ payment_recipient.contact_url }}" target="_blank" rel="noopener noreferrer">Обсудить задачу в Telegram <span>↗</span></a>
+  </article>
+  <article class="recipient-card">
+    <h2>Добровольная поддержка проектов</h2>
+    <p>Если вы хотите поддержать мою работу над авторскими проектами без заказа конкретной услуги, воспользуйтесь страницей Donate. Сумма поддержки выбирается добровольно; этот платёж не является покупкой товара или оплатой согласованной задачи.</p>
+    {% include "_support_recipient.html" %}
+    <a class="button button-ghost" href="{{ url_for('site.donate') }}">Поддержать разработку <span>↗</span></a>
+  </article>
+</section>
+{% endblock %}

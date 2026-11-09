@@ -32,7 +32,9 @@
       <div class="payment-banner-foot">После нажатия кнопки вы перейдёте к выбору способа оплаты.</div>
     </div>
 
-    <button class="button button-gold button-full pay-button" type="submit"><span class="pay-icon">↗</span><span>Перейти к оплате</span><span class="pay-arrow">→</span></button>
+    {% include "_support_recipient.html" %}
+    <button class="button button-gold button-full pay-button" type="submit" aria-describedby="donation-purpose"><span class="pay-icon">↗</span><span>Перейти к оплате</span><span class="pay-arrow">→</span></button>
+    <small class="donation-purpose" id="donation-purpose">Добровольная поддержка не является покупкой товара и не предусматривает оказания конкретной услуги. Заказать работу можно на странице <a href="{{ url_for('site.services') }}">«Услуги»</a>.</small>
     <div class="form-status" role="status" aria-live="polite"></div>
     <small class="form-legal">Нажимая кнопку, вы соглашаетесь с обработкой данных для проведения платежа.</small>
   </form>
@@ -44,4 +46,4 @@
   </div>
 </section>
 {% endblock %}
-{% block footer %}{% endblock %}
+{% block footer %}{% include "_donate_footer.html" %}{% endblock %}

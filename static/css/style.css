@@ -123,3 +123,41 @@ h2{font-size:clamp(1.55rem,3vw,2.45rem)!important;line-height:1.12;letter-spacin
 /* Match the payment methods panel to the checkout button and center its content. */
 .donate-form .payment-banner{width:min(100%,275px);max-width:275px;margin:18px auto;text-align:center}.donate-form .payment-banner-top{justify-content:center;flex-wrap:wrap;gap:6px 8px}.donate-form .secure-label{margin-left:0}.donate-form .bank-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;justify-items:stretch}.donate-form .bank-chip{justify-content:center;gap:5px;padding:6px 5px;font-size:.58rem}.donate-form .payment-banner-foot{text-align:center}
 @media(max-width:760px){.donate-form .payment-banner{width:min(100%,275px);max-width:275px}.donate-form .payment-banner-top{font-size:.62rem}.donate-form .secure-label{font-size:.49rem}}
+
+/* Public recipient details and payment purpose, in the shared site palette. */
+.footer-links{flex-wrap:wrap;gap:12px 20px}
+.footer.footer-compact{display:flex;justify-content:space-between;align-items:center;gap:16px;padding-block:24px;color:var(--muted);font-size:.7rem}
+.footer-compact .footer-links{justify-content:flex-end}
+.support-recipient{max-width:580px;margin:18px 0;color:var(--muted);font-size:.72rem;line-height:1.8;overflow-wrap:anywhere}
+.support-banner .support-recipient{font-size:.72rem}
+.support-recipient strong{color:var(--text);font-weight:600}
+.support-recipient a,.donation-purpose a,.recipient-card a:not(.button){color:var(--gold);text-underline-offset:3px}
+.support-recipient a:hover,.donation-purpose a:hover,.recipient-card a:not(.button):hover{color:var(--text)}
+.donate-form .support-recipient{padding-top:16px;border-top:1px solid var(--line);text-align:center}
+.donation-purpose{display:block;margin:12px auto 0;max-width:370px;text-align:center;color:var(--muted);font-size:.68rem;line-height:1.7}
+.recipient-hero .page-lead{max-width:600px}
+.recipient-layout{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);gap:20px;align-items:start;padding-block:48px 90px}
+.recipient-card{min-width:0;padding:28px;background:var(--surface);border:1px solid var(--line);border-radius:7px}
+.recipient-card h2{font-size:1.08rem!important;line-height:1.4;letter-spacing:-.02em;margin:0 0 18px}
+.recipient-card h3{font-size:.9rem;margin:24px 0 10px}
+.recipient-card p{color:var(--muted);font-size:.82rem;line-height:1.85;overflow-wrap:anywhere}
+.recipient-card p:last-child{margin-bottom:0}
+.recipient-card .text-link{margin-top:0}
+.recipient-details{margin:0}
+.recipient-details>div{padding-block:14px;border-top:1px solid var(--line)}
+.recipient-details>div:first-child{border-top:0;padding-top:0}
+.recipient-details>div:last-child{padding-bottom:0}
+.recipient-details dt{font-size:.7rem;color:var(--muted);margin-bottom:4px}
+.recipient-details dd{margin:0;font-size:.88rem;line-height:1.7;overflow-wrap:anywhere}
+.services-overview{padding-bottom:24px}
+.services-overview .service-card h3{margin-top:30px;font-size:1.05rem;line-height:1.4}
+.service-terms{display:grid;gap:20px;padding-bottom:90px}
+.service-terms .support-recipient{font-size:.72rem}
+@media(max-width:760px){
+  .recipient-layout{grid-template-columns:1fr;gap:16px;padding-block:28px 60px}
+  .recipient-card{padding:22px 20px}
+  .recipient-card h2{font-size:1rem!important}
+  .service-terms{gap:16px;padding-bottom:60px}
+  .footer.footer-compact{flex-direction:column;align-items:flex-start}
+  .footer-compact .footer-links{justify-content:flex-start}
+}

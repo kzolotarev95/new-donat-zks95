@@ -7,6 +7,7 @@ from .db import close_db, donor_color, init_app as init_db_app
 from .routes import bp
 from .admin import admin_bp
 from .settings import get_runtime_setting
+from .recipient import PAYMENT_RECIPIENT
 from .visual import VISUAL_EFFECTS, VISUAL_SPEEDS, normalize_visual_effect, normalize_visual_speed
 
 
@@ -59,6 +60,7 @@ def create_app(test_config=None):
     def inject_brand():
         return {
             "brand": "ZKS95 Developer",
+            "payment_recipient": PAYMENT_RECIPIENT,
             "site_domain": app.config.get("SITE_DOMAIN", ""),
             "year": 2026,
             "donor_color": donor_color,

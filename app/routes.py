@@ -60,6 +60,11 @@ def services():
     return render_template("services.html")
 
 
+@bp.get("/requisites")
+def requisites():
+    return render_template("requisites.html")
+
+
 @bp.get("/support")
 def support():
     return render_template("support.html")
@@ -105,7 +110,7 @@ def payments_api():
         secret_key = get_runtime_setting("YOOKASSA_SECRET_KEY", current_app.config["YOOKASSA_SECRET_KEY"])
         if not shop_id or not secret_key:
             return jsonify(error="Платёжная система ещё не настроена администратором"), 503
-        description = "Поддержка ZKS95 Developer"
+        description = "Добровольная поддержка авторских проектов ZKS95 Developer"
         return_url = get_runtime_setting("YOOKASSA_RETURN_URL", current_app.config["YOOKASSA_RETURN_URL"])
         result, idempotency_key = create_payment(
             amount, description, return_url or _absolute_url("/payment/success"),
