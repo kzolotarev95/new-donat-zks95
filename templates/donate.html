@@ -30,9 +30,13 @@
 </section>
 <section class="donor-wall shell" aria-labelledby="donors-title">
   <div class="section-head"><div><p class="eyebrow">Community / Supporters</p><h2 id="donors-title">Спасибо тем,<br><em>кто рядом.</em></h2></div></div>
-  <div class="donor-grid">
-    {% for donor in donors %}<article class="donor-card donor-{{ donor.color }}{% if donor.pinned %} is-pinned{% endif %}" style="--donor-accent: {{ donor_color(donor.color) }}"{% if donor.pinned %} data-pinned="true"{% endif %}><span class="donor-avatar"><img src="{{ url_for('site.donor_avatar', donor_id=donor.id) }}" alt="" loading="lazy"></span><div>{% if donor.social_url %}<a class="donor-name" href="{{ donor.social_url }}" target="_blank" rel="noopener noreferrer nofollow">{{ donor.nickname }}</a>{% else %}<strong class="donor-name">{{ donor.nickname }}</strong>{% endif %}<small>{{ donor.note or 'Поддержал разработку' }} · {{ donor.total_amount }} ₽</small></div>{% if donor.pinned %}<span class="donor-pin" title="Закреплённый донатер" aria-label="Закреплённый донатер">⌖</span>{% else %}<span class="donor-check">✓</span>{% endif %}</article>{% else %}<div class="empty-state">Станьте первым донатером — ваше имя появится здесь после оплаты.</div>{% endfor %}
+  <div class="donor-grid" id="donor-list">
+    {% for donor in donors %}<article{% if loop.index > 12 %} hidden data-extra-donor{% endif %} class="donor-card donor-{{ donor.color }}{% if donor.pinned %} is-pinned{% endif %}" style="--donor-accent: {{ donor_color(donor.color) }}"{% if donor.pinned %} data-pinned="true"{% endif %}><span class="donor-avatar"><img src="{{ url_for('site.donor_avatar', donor_id=donor.id) }}" alt="" loading="lazy"></span><div>{% if donor.social_url %}<a class="donor-name" href="{{ donor.social_url }}" target="_blank" rel="noopener noreferrer nofollow">{{ donor.nickname }}</a>{% else %}<strong class="donor-name">{{ donor.nickname }}</strong>{% endif %}<small>{{ donor.note or 'Поддержал разработку' }} · {{ donor.total_amount }} ₽</small></div>{% if donor.pinned %}<span class="donor-pin" title="Закреплённый донатер" aria-label="Закреплённый донатер">⌖</span>{% else %}<span class="donor-check">✓</span>{% endif %}</article>{% else %}<div class="empty-state">Станьте первым донатером — ваше имя появится здесь после оплаты.</div>{% endfor %}
   </div>
+  {% if donors|length > 12 %}
+  <div class="donor-more-actions"><button class="button button-ghost donor-show-all" type="button" aria-controls="donor-list" aria-expanded="false">Показать всех</button></div>
+  <noscript><style>.donor-grid .donor-card[hidden]{display:flex!important}.donor-more-actions{display:none}</style></noscript>
+  {% endif %}
 </section>
 {% endblock %}
 {% block footer %}{% endblock %}

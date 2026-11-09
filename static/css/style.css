@@ -125,6 +125,10 @@ h2{font-size:clamp(1.55rem,3vw,2.45rem)!important;line-height:1.12;letter-spacin
 @media(max-width:760px){.donate-form .payment-banner{width:min(100%,275px);max-width:275px}.donate-form .payment-banner-top{font-size:.62rem}.donate-form .secure-label{font-size:.49rem}}
 
 /* Public recipient details and payment purpose, in the shared site palette. */
+.donor-grid .donor-card[hidden],.donor-more-actions[hidden]{display:none!important}
+.donor-more-actions{display:flex;justify-content:center;margin-top:24px}
+.donor-show-all{background:rgba(225,6,32,.08);border-color:rgba(225,6,32,.5);color:var(--gold);padding:11px 24px}
+.donor-show-all:hover{background:rgba(225,6,32,.16);border-color:var(--gold)}
 .footer-links{flex-wrap:wrap;gap:12px 20px}
 .support-recipient{max-width:580px;margin:18px 0;color:var(--muted);font-size:.72rem;line-height:1.8;overflow-wrap:anywhere}
 .support-banner .support-recipient{font-size:.72rem}

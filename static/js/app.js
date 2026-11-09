@@ -28,6 +28,20 @@ document.addEventListener('DOMContentLoaded', () => {
   refreshRepositories();
   window.setInterval(refreshRepositories, 60000);
 
+  const showAllDonors = document.querySelector('.donor-show-all');
+  if (showAllDonors) {
+    showAllDonors.addEventListener('click', () => {
+      const extraDonors = document.querySelectorAll('#donor-list [data-extra-donor]');
+      extraDonors.forEach(card => { card.hidden = false; });
+      showAllDonors.setAttribute('aria-expanded', 'true');
+      showAllDonors.parentElement.hidden = true;
+      if (extraDonors.length) {
+        extraDonors[0].setAttribute('tabindex', '-1');
+        extraDonors[0].focus({ preventScroll: true });
+      }
+    });
+  }
+
   const form = document.querySelector('#donate-form');
   if (!form) return;
   const amount = form.querySelector('[name=amount]');

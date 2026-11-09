@@ -177,11 +177,12 @@ def donor_color(token):
     return DONOR_COLOR_VALUES.get(token, DONOR_COLOR_VALUES["red"])
 
 
-def list_donors(active_only=True, limit=60):
+def list_donors(active_only=True, limit=None):
     where = "WHERE is_active = 1" if active_only else ""
-    return get_db().execute(
-        f"SELECT * FROM donors {where} ORDER BY pinned DESC, updated_at DESC, id DESC LIMIT ?", (limit,)
-    ).fetchall()
+    query = f"SELECT * FROM donors {where} ORDER BY pinned DESC, updated_at DESC, id DESC"
+    if limit is not None:
+        return get_db().execute(query + " LIMIT ?", (limit,)).fetchall()
+    return get_db().execute(query).fetchall()
 
 
 def create_donor(nickname, color="red", note="", total_amount="0", social_url="", pinned=0):
