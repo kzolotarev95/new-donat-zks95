@@ -117,8 +117,9 @@ h2{font-size:clamp(1.55rem,3vw,2.45rem)!important;line-height:1.12;letter-spacin
 .backup-actions input[type=file]{width:100%;margin:0!important}.backup-actions .backup-check{width:100%;justify-content:center;white-space:nowrap}.backup-actions .backup-check input[type=checkbox]{display:inline-block;width:16px!important;min-width:16px;height:16px;margin:0!important;padding:0;flex:0 0 16px}
 
 /* Bring the supporters wall closer to the checkout section. */
-.donate-page{padding-bottom:42px}.donor-wall{padding-top:4px}
-@media(max-width:760px){.donate-page{padding-bottom:34px}.donor-wall{padding-top:0}}
+.donate-page{padding-bottom:12px}.donor-wall{padding-top:0}
+.donor-wall .section-head{margin-bottom:16px}.donor-wall .section-head .eyebrow{margin-bottom:10px}
+@media(max-width:760px){.donate-page{padding-bottom:8px}}
 
 /* Match the payment methods panel to the checkout button and center its content. */
 .donate-form .payment-banner{width:min(100%,275px);max-width:275px;margin:18px auto;text-align:center}.donate-form .payment-banner-top{justify-content:center;flex-wrap:wrap;gap:6px 8px}.donate-form .secure-label{margin-left:0}.donate-form .bank-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;justify-items:stretch}.donate-form .bank-chip{justify-content:center;gap:5px;padding:6px 5px;font-size:.58rem}.donate-form .payment-banner-foot{text-align:center}
