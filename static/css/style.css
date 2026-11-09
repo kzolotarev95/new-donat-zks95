@@ -176,6 +176,8 @@ h2{font-size:clamp(1.55rem,3vw,2.45rem)!important;line-height:1.12;letter-spacin
 @media(max-width:760px){
   .donate-page .donate-form{padding:18px}
   .donate-page .donate-copy h1,.donate-page .donate-form-head h2,.donor-wall .section-head h2{font-size:1.55rem!important;line-height:1.12;letter-spacing:-.035em}
+  .donate-page .donate-copy,.donor-wall .section-head{text-align:center}
+  .donate-page .donate-copy,.donate-page .donate-copy>p{margin-inline:auto}
 }
 .donate-form .pay-button{position:relative;isolation:isolate;display:grid;grid-template-columns:auto 1fr 18px;align-items:center;gap:12px;width:min(100%,340px);min-height:58px;margin:8px auto 0;padding:11px 15px;overflow:hidden;border:1px solid rgba(225,6,32,.5);border-radius:13px;background:linear-gradient(125deg,#24242c,#15151c 65%);color:#f6f5fa;box-shadow:0 8px 24px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.07);transition:transform .25s ease,border-color .25s ease,box-shadow .25s ease}
 .pay-button::before{content:"";position:absolute;z-index:-1;inset:0;background:linear-gradient(110deg,rgba(135,70,145,.15),transparent 40%,rgba(13,144,205,.1));pointer-events:none}
