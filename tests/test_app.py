@@ -28,7 +28,7 @@ def test_donate_page_contains_donor_wall(client):
     assert "visual-effect-none" in body
     assert "Золотарев Кирилл Сергеевич" in body
     assert "182501591471" in body
-    assert 'class="footer footer-compact"' in body
+    assert '<footer' not in body
     assert 'href="/requisites"' in body
     assert "не является покупкой товара" in body
 
@@ -202,10 +202,10 @@ def test_public_nav_hides_about(client):
     body = client.get("/donate").get_data(as_text=True)
     assert ">About</a>" not in body
 
-def test_payment_methods_are_above_payment_action(client):
+def test_payment_action_without_bank_banner(client):
     body = client.get("/donate").get_data(as_text=True)
-    assert body.count("payment-banner") >= 1
-    assert body.index("payment-banner") < body.index("pay-button")
+    assert "payment-banner" not in body
+    assert "Перейти к оплате" in body
 
 def test_system_event_push_setting(app, monkeypatch):
     from app.push import notify_service_event

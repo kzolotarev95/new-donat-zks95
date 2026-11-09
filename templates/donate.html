@@ -20,17 +20,6 @@
     <div class="quick-amounts" role="group" aria-label="Быстрый выбор суммы"><button type="button" data-amount="250">250 ₽</button><button type="button" data-amount="500" class="selected">500 ₽</button><button type="button" data-amount="1000">1 000 ₽</button><button type="button" data-amount="2500">2 500 ₽</button></div>
     <label>Никнейм <span class="optional">обязательно</span><input type="text" name="nickname" maxlength="64" minlength="2" placeholder="например, zks95" required></label>
     <label>Сообщение <span class="optional">необязательно</span><textarea name="message" rows="3" maxlength="500" placeholder="Пара слов разработчику"></textarea></label>
-    <div class="payment-banner" aria-label="Способы оплаты">
-      <div class="payment-banner-top"><span class="signal-dot"></span><strong>Оплата через ЮKassa</strong><span class="secure-label">SSL · 3-D Secure</span></div>
-      <div class="payment-banner-title">Банковские способы оплаты</div>
-      <div class="bank-list">
-        <span class="bank-chip"><b class="bank-mark bank-t">T</b> Т-Банк</span>
-        <span class="bank-chip"><b class="bank-mark bank-s">С</b> Сбер</span>
-        <span class="bank-chip"><b class="bank-mark bank-v">V</b> ВТБ</span>
-        <span class="bank-chip"><b class="bank-mark bank-a">A</b> Альфа</span>
-      </div>
-      <div class="payment-banner-foot">После нажатия кнопки вы перейдёте к выбору способа оплаты.</div>
-    </div>
 
     {% include "_support_recipient.html" %}
     <button class="button button-gold button-full pay-button" type="submit" aria-describedby="donation-purpose"><span class="pay-icon">↗</span><span>Перейти к оплате</span><span class="pay-arrow">→</span></button>
@@ -46,4 +35,4 @@
   </div>
 </section>
 {% endblock %}
-{% block footer %}{% include "_donate_footer.html" %}{% endblock %}
+{% block footer %}{% endblock %}

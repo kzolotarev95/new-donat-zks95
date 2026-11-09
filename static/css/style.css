@@ -126,8 +126,6 @@ h2{font-size:clamp(1.55rem,3vw,2.45rem)!important;line-height:1.12;letter-spacin
 
 /* Public recipient details and payment purpose, in the shared site palette. */
 .footer-links{flex-wrap:wrap;gap:12px 20px}
-.footer.footer-compact{display:flex;justify-content:space-between;align-items:center;gap:16px;padding-block:24px;color:var(--muted);font-size:.7rem}
-.footer-compact .footer-links{justify-content:flex-end}
 .support-recipient{max-width:580px;margin:18px 0;color:var(--muted);font-size:.72rem;line-height:1.8;overflow-wrap:anywhere}
 .support-banner .support-recipient{font-size:.72rem}
 .support-recipient strong{color:var(--text);font-weight:600}
@@ -158,6 +156,4 @@ h2{font-size:clamp(1.55rem,3vw,2.45rem)!important;line-height:1.12;letter-spacin
   .recipient-card{padding:22px 20px}
   .recipient-card h2{font-size:1rem!important}
   .service-terms{gap:16px;padding-bottom:60px}
-  .footer.footer-compact{flex-direction:column;align-items:flex-start}
-  .footer-compact .footer-links{justify-content:flex-start}
 }
