@@ -87,6 +87,7 @@ for UNIT_FILE in "${APP_DIR}"/config/systemd/*.service "${APP_DIR}"/config/syste
 done
 systemctl daemon-reload; systemctl enable "${SERVICE_NAME}"; systemctl restart "${SERVICE_NAME}"
 systemctl enable --now "${APP_NAME}-health.timer"
+systemctl enable --now "${APP_NAME}-login-push.timer"
 log "Проверяю и согласую Nginx, не затрагивая чужие сайты"
 BACKUP_DIR="${BACKUP_DIR}/install-$(date +%Y%m%d-%H%M%S)"
 env SITE_DOMAIN="${SITE_DOMAIN}" APP_DIR="${APP_DIR}" APP_PORT="${APP_PORT}" BACKUP_DIR="${BACKUP_DIR}" "${APP_DIR}/scripts/reconcile_nginx.sh"

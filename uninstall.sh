@@ -16,8 +16,10 @@ REMOVE_APP_USER=0; [[ -f "${ETC_DIR}/.user-created" ]] && REMOVE_APP_USER=1
 SITE_DOMAIN=""
 if [[ -r "${ETC_DIR}/.env" ]]; then SITE_DOMAIN="$(awk -F= '/^SITE_DOMAIN=/{print substr($0,index($0,$2)); exit}' "${ETC_DIR}/.env" || true)"; fi
 systemctl disable --now "${APP_NAME}-health.timer" "${APP_NAME}-health.service" 2>/dev/null || true
+systemctl disable --now "${APP_NAME}-login-push.timer" "${APP_NAME}-login-push.service" 2>/dev/null || true
 systemctl disable --now "${SERVICE_NAME}" 2>/dev/null || true; systemctl disable --now "${ALERT_SERVICE_NAME}" 2>/dev/null || true
-rm -f "/etc/systemd/system/${SERVICE_NAME}" "/etc/systemd/system/${ALERT_SERVICE_NAME}" "/etc/systemd/system/${APP_NAME}-health.service" "/etc/systemd/system/${APP_NAME}-health.timer"; systemctl daemon-reload
+rm -f "/etc/systemd/system/${SERVICE_NAME}" "/etc/systemd/system/${ALERT_SERVICE_NAME}" "/etc/systemd/system/${APP_NAME}-health.service" "/etc/systemd/system/${APP_NAME}-health.timer" "/etc/systemd/system/${APP_NAME}-login-push.service" "/etc/systemd/system/${APP_NAME}-login-push.timer"
+systemctl daemon-reload
 if [[ -n "${SITE_DOMAIN}" && -x "${APP_DIR}/scripts/remove_nginx.sh" ]]; then
   SITE_DOMAIN="${SITE_DOMAIN}" BACKUP_DIR="${BACKUP}/nginx" "${APP_DIR}/scripts/remove_nginx.sh" || echo "Nginx-конфиг не удалён автоматически; резервная копия: ${BACKUP}/nginx" >&2
 fi

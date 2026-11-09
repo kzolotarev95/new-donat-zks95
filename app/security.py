@@ -48,18 +48,22 @@ def admin_required(view):
 
 def authenticated_admin():
     from .db import get_admin_user_by_id
+    from .admin_sessions import validate
     user_id = session.get("admin_user_id")
     if not user_id:
         return None
     user = get_admin_user_by_id(user_id)
     if (not user or session.get("admin_auth_version", 0) != user["auth_version"]
-            or (user["totp_secret"] and session.get("admin_2fa") is not True)):
+            or (user["totp_secret"] and session.get("admin_2fa") is not True)
+            or not validate(user)):
         session.clear()
         return None
     return user
 
 
-def establish_admin_session(user, second_factor=False):
+def establish_admin_session(user, second_factor=False, *, new_login=False, login_method="password"):
+    from .admin_sessions import establish
+    token, record_id = establish(user, new_login=new_login, login_method=login_method)
     session.clear()
     session.permanent = True
     session["admin_user_id"] = user["id"]
@@ -67,4 +71,6 @@ def establish_admin_session(user, second_factor=False):
     session["admin_auth_version"] = user["auth_version"]
     session["admin_2fa"] = bool(second_factor)
     session["must_change_password"] = bool(user["must_change_password"])
+    session["admin_session_token"] = token
     csrf_token()
+    return record_id

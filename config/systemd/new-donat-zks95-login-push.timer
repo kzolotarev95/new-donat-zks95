@@ -1,0 +1,11 @@
+[Unit]
+Description=Retry ZKS95 login push delivery every minute
+
+[Timer]
+OnBootSec=30
+OnUnitInactiveSec=60
+AccuracySec=5
+Unit=new-donat-zks95-login-push.service
+
+[Install]
+WantedBy=timers.target

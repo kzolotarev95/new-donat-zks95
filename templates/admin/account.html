@@ -1,1 +1,74 @@
-{% extends "admin/base.html" %}{% block title %}Аккаунт — ZKS95 Admin{% endblock %}{% block content %}<div class="admin-title"><div><p class="eyebrow">Account security</p><h1>Мой <em>аккаунт.</em></h1></div></div><form class="admin-card narrow" method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><label>Новый логин<input name="username" value="{{ user.username }}" autocomplete="username" required><small>3–64 символа: латиница, цифры, точка, дефис или _.</small></label><label>Текущий пароль<input type="password" name="current_password" autocomplete="current-password" required></label><label>Новый пароль <span class="optional">необязательно</span><input type="password" name="new_password" minlength="6" autocomplete="new-password"><small>Оставьте пустым, если меняете только логин. Минимум 6 символов.</small></label><label>Повторите новый пароль<input type="password" name="repeat_password" minlength="6" autocomplete="new-password"></label><button class="button button-gold" type="submit">Сохранить изменения</button></form>{% endblock %}
+{% extends "admin/base.html" %}
+{% block title %}Аккаунт — ZKS95 Admin{% endblock %}
+{% block content %}
+<div class="admin-title"><div><p class="eyebrow">Account security</p><h1>Мой <em>аккаунт.</em></h1></div></div>
+<div class="account-layout">
+  <form class="admin-card account-profile" method="post">
+    <h2>Данные для входа</h2>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label>Новый логин<input name="username" value="{{ user.username }}" autocomplete="username" required><small>3–64 символа: латиница, цифры, точка, дефис или _.</small></label>
+    <label>Текущий пароль<input type="password" name="current_password" autocomplete="current-password" required></label>
+    <label>Новый пароль <span class="optional">необязательно</span><input type="password" name="new_password" minlength="6" autocomplete="new-password"><small>Оставьте пустым, если меняете только логин. Минимум 6 символов.</small></label>
+    <label>Повторите новый пароль<input type="password" name="repeat_password" minlength="6" autocomplete="new-password"></label>
+    <button class="button button-gold" type="submit">Сохранить изменения</button>
+    <p class="muted account-security-link">2FA: {{ 'включена' if user.totp_secret else 'выключена' }} · <a href="{{ url_for('admin.settings', _anchor='two-factor') }}">Настроить защиту</a></p>
+  </form>
+  <section class="admin-panel account-sessions" id="sessions" aria-labelledby="sessions-title">
+    <div class="account-section-head"><h2 id="sessions-title">История входов и сеансов</h2><span class="muted">Всего: {{ sessions.total }}</span></div>
+    <p class="muted">Время указано в UTC. История записывается с момента установки этого обновления. IP может меняться при смене сети или использовании VPN.</p>
+    <div class="account-session-actions">
+      <form method="post" action="{{ url_for('admin.revoke_sessions') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="others" value="1">
+        <button class="button button-ghost" type="submit">Завершить другие сеансы</button>
+      </form>
+      <a class="account-push-link" href="{{ url_for('admin.notifications') }}">Push о входах: {{ 'включён' if push.enabled and push.notify_logins and push.configured and push.subscriptions else 'настроить' }}</a>
+    </div>
+    <div class="account-session-list">
+    {% for item in sessions.records %}
+      <article class="account-session{% if item.current %} is-current{% endif %}">
+        <div class="account-session-heading"><strong>{{ item.device }}</strong><span class="account-session-status{% if item.active %} is-active{% endif %}">{{ 'Этот сеанс' if item.current and item.active else item.status }}</span></div>
+        <dl class="account-session-data">
+          <div><dt>IP-адрес</dt><dd>{{ item.ip_address }}</dd></div>
+          <div><dt>Вход</dt><dd>{{ item.started }}</dd></div>
+          <div><dt>Активность</dt><dd>{{ item.last_seen }}</dd></div>
+          <div><dt>Подтверждение</dt><dd>{{ item.method }}</dd></div>
+        </dl>
+        {% if item.active and not item.current %}
+        <form method="post" action="{{ url_for('admin.revoke_sessions') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="session_id" value="{{ item.id }}">
+          <button class="button button-ghost" type="submit">Завершить сеанс</button>
+        </form>
+        {% endif %}
+      </article>
+    {% else %}<p class="muted">Сохранённых входов пока нет.</p>{% endfor %}
+    </div>
+    {% if sessions.pages > 1 %}
+    <nav class="pagination" aria-label="История сеансов">
+      {% if sessions.page > 1 %}<a href="{{ url_for('admin.account', page=sessions.page-1, _anchor='sessions') }}">← Назад</a>{% endif %}
+      <span>{{ sessions.page }} / {{ sessions.pages }}</span>
+      {% if sessions.page < sessions.pages %}<a href="{{ url_for('admin.account', page=sessions.page+1, _anchor='sessions') }}">Далее →</a>{% endif %}
+    </nav>
+    {% endif %}
+  </section>
+</div>
+<details class="admin-panel account-manual" id="commands">
+  <summary><span>Мануал команд</span><span class="account-manual-hint">Открыть / закрыть</span></summary>
+  <div class="account-manual-content">
+    <p class="muted">Выполняйте команды в SSH-терминале вашего VPS. Кнопка «Копировать» только копирует текст. При потере доступа к панели этот справочник также есть в docs/ADMIN.md в репозитории.</p>
+    {% for title, commands in command_groups %}
+    <details class="account-command-group">
+      <summary>{{ title }}</summary>
+      <div class="account-command-items">
+      {% for title, description, command in commands %}
+        <article class="account-command"><h3>{{ title }}</h3><p class="muted">{{ description }}</p>
+          {% if command %}<pre><code>{{ command }}</code></pre><button type="button" class="button button-ghost" data-copy-command>Копировать</button>{% endif %}
+        </article>
+      {% endfor %}
+      </div>
+    </details>
+    {% endfor %}
+    <p class="muted account-copy-status" role="status" data-copy-status></p>
+  </div>
+</details>
+{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='js/account.js') }}" defer></script>{% endblock %}

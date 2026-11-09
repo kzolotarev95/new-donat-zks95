@@ -54,6 +54,10 @@ def system_notifications_enabled():
     return get_runtime_setting("PUSH_NOTIFY_SYSTEM", "1").strip().lower() in {"1", "true", "yes", "on"}
 
 
+def login_notifications_enabled():
+    return get_runtime_setting("PUSH_NOTIFY_LOGINS", "1").strip().lower() in {"1", "true", "yes", "on"}
+
+
 def push_settings():
     configured_email = get_runtime_setting("VAPID_CLAIMS_EMAIL", "").strip()
     if configured_email.startswith("mailto:"):
@@ -62,6 +66,7 @@ def push_settings():
         "enabled": push_enabled(),
         "notify_payments": payment_notifications_enabled(),
         "notify_system": system_notifications_enabled(),
+        "notify_logins": login_notifications_enabled(),
         "public_key": public_key(),
         "claims_email": configured_email,
         "configured": bool(public_key() and get_runtime_setting("VAPID_PRIVATE_KEY", "").strip() and claims_email()),

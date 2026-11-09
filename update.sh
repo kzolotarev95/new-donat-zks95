@@ -75,4 +75,7 @@ fi
 if [[ -f "${APP_DIR}/config/systemd/${APP_NAME}-health.timer" ]]; then
   systemctl enable --now "${APP_NAME}-health.timer"
 fi
+if [[ -f "${APP_DIR}/config/systemd/${APP_NAME}-login-push.timer" ]]; then
+  systemctl enable --now "${APP_NAME}-login-push.timer"
+fi
 log "Готово. Сервис слушает 127.0.0.1:${APP_PORT}; бэкап: ${BACKUP}"

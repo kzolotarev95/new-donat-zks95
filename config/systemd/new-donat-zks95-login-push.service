@@ -1,0 +1,19 @@
+[Unit]
+Description=Retry queued ZKS95 admin login notifications
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=zks95
+Group=zks95
+WorkingDirectory=/opt/new-donat-zks95
+EnvironmentFile=/etc/new-donat-zks95/.env
+ExecStart=/opt/new-donat-zks95/.venv/bin/python /opt/new-donat-zks95/scripts/send_login_notifications.py
+TimeoutStartSec=240
+PrivateTmp=true
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/new-donat-zks95
+ReadWritePaths=/var/log/new-donat-zks95

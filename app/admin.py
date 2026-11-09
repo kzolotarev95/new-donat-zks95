@@ -16,6 +16,9 @@ from .payments import fetch_payment
 from .push import generate_vapid_keys, notify_payment_success, push_settings, send_push
 from .security import admin_required, authenticated_admin, csrf_token, establish_admin_session, require_csrf
 from . import two_factor
+from . import admin_sessions
+from .login_notifications import enqueue_login
+from .admin_manual import COMMAND_GROUPS
 from .settings import get_runtime_setting, set_runtime_setting
 from .visual import VISUAL_EFFECTS, VISUAL_SPEEDS, normalize_visual_effect, normalize_visual_speed
 from .captcha import site_key as recaptcha_site_key, verify as verify_recaptcha
@@ -61,9 +64,13 @@ def _safe_admin_next(target):
     return target
 
 
-def _finish_login(user, target=None, second_factor=False):
-    establish_admin_session(user, second_factor)
+def _finish_login(user, target=None, second_factor=False, login_method="password"):
+    record_id = establish_admin_session(user, second_factor, new_login=True, login_method=login_method)
     mark_admin_login(user["id"])
+    try:
+        enqueue_login(user, record_id)
+    except Exception:
+        log.exception("Could not queue the admin login notification")
     return redirect(_safe_admin_next(target))
 
 
@@ -92,7 +99,7 @@ def login_post():
     username = (request.form.get("username") or "").strip()
     password = request.form.get("password") or ""
     bucket = f"password:{username.casefold()[:128]}"
-    ip_bucket = f"password-ip:{request.remote_addr}"
+    ip_bucket = f"password-ip:{admin_sessions.client_address()}"
     try:
         two_factor.take_attempt(bucket, limit=10)
         two_factor.take_attempt(ip_bucket, limit=60)
@@ -126,16 +133,19 @@ def two_factor_login():
     recovery = request.args.get("recovery") == "1"
     if request.method == "POST":
         try:
-            two_factor.consume_factor(user, request.form.get("code"))
+            method = two_factor.consume_factor(user, request.form.get("code"))
         except two_factor.AuthError as exc:
             return render_template("admin/two_factor_login.html", recovery=recovery, error=str(exc)), exc.status
         target = session.get("two_factor_next")
-        return _finish_login(user, target, second_factor=True)
+        return _finish_login(user, target, second_factor=True, login_method=method)
     return render_template("admin/two_factor_login.html", recovery=recovery)
 
 
 @admin_bp.post("/logout")
 def logout():
+    record = admin_sessions.current_record()
+    if record:
+        admin_sessions.revoke(record["user_id"], record["id"], "logout")
     session.clear()
     return redirect(url_for("admin.login"))
 
@@ -312,7 +322,31 @@ def account():
             establish_admin_session(get_admin_user_by_id(user["id"]), session.get("admin_2fa", False))
             flash("Данные аккаунта сохранены.", "success")
             return redirect(url_for("admin.account"))
-    return render_template("admin/account.html", user=user)
+    try:
+        page = max(1, int(request.args.get("page", 1)))
+    except ValueError:
+        page = 1
+    return render_template("admin/account.html", user=user, sessions=admin_sessions.history(user, page), push=push_settings(), command_groups=COMMAND_GROUPS)
+
+
+@admin_bp.post("/account/sessions/revoke")
+@admin_required
+def revoke_sessions():
+    if request.form.get("others") == "1":
+        admin_sessions.revoke_others(session["admin_user_id"])
+        flash("Другие сеансы завершены.", "success")
+    else:
+        try:
+            record_id = int(request.form.get("session_id", ""))
+        except ValueError:
+            abort(400)
+        record = admin_sessions.current_record()
+        if record_id == record["id"]:
+            return redirect(url_for("admin.account", _anchor="sessions"))
+        if not admin_sessions.revoke(session["admin_user_id"], record_id):
+            abort(404)
+        flash("Сеанс завершён.", "success")
+    return redirect(url_for("admin.account", _anchor="sessions"))
 
 
 @admin_bp.route("/notifications", methods=["GET", "POST"])
@@ -322,6 +356,7 @@ def notifications():
         set_runtime_setting("PUSH_ENABLED", "1" if request.form.get("PUSH_ENABLED") == "1" else "0")
         set_runtime_setting("PUSH_NOTIFY_PAYMENTS", "1" if request.form.get("PUSH_NOTIFY_PAYMENTS") == "1" else "0")
         set_runtime_setting("PUSH_NOTIFY_SYSTEM", "1" if request.form.get("PUSH_NOTIFY_SYSTEM") == "1" else "0")
+        set_runtime_setting("PUSH_NOTIFY_LOGINS", "1" if request.form.get("PUSH_NOTIFY_LOGINS") == "1" else "0")
         email = (request.form.get("VAPID_CLAIMS_EMAIL") or "").strip()
         if email.startswith("mailto:"):
             email = email[7:]

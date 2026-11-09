@@ -154,6 +154,7 @@ def consume_factor(user, code):
     if not changed:
         raise AuthError("Код неверен, уже использован или истёк. Введите новый код.", 401)
     clear_rate(bucket)
+    return "totp" if len(normalized) == 6 else "recovery"
 
 
 def recovery_count(user):
