@@ -1,0 +1,13 @@
+[Unit]
+Description=Check and recover the ZKS95 Developer application
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/flock --nonblock --conflict-exit-code 0 /run/lock/new-donat-zks95-maintenance.lock /usr/bin/python3 /opt/new-donat-zks95/scripts/check_service_health.py
+TimeoutStartSec=120
+PrivateTmp=true
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/run/lock

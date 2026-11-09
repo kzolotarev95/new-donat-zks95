@@ -6,7 +6,6 @@ SITE_DOMAIN="${SITE_DOMAIN:?SITE_DOMAIN is required}"
 DOMAIN_RE="$(printf '%s' "${SITE_DOMAIN}" | sed 's/[][\\.^$*+?(){}|]/\\&/g')"
 BACKUP_DIR="${BACKUP_DIR:-/var/backups/${APP_NAME}}"
 NGINX_AVAILABLE="/etc/nginx/sites-available/${APP_NAME}.conf"
-NGINX_ENABLED="/etc/nginx/sites-enabled/${APP_NAME}.conf"
 STAMP="$(date +%Y%m%d-%H%M%S)"
 
 mkdir -p "${BACKUP_DIR}"

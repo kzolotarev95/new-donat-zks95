@@ -1,0 +1,11 @@
+[Unit]
+Description=Periodically check the ZKS95 Developer application
+
+[Timer]
+OnBootSec=90
+OnUnitInactiveSec=60
+AccuracySec=5
+Unit=new-donat-zks95-health.service
+
+[Install]
+WantedBy=timers.target

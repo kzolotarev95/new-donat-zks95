@@ -3,17 +3,19 @@ Description=ZKS95 Developer donation site
 After=network-online.target
 Wants=network-online.target
 OnFailure=new-donat-zks95-alert.service
+StartLimitIntervalSec=60
+StartLimitBurst=5
 
 [Service]
 Type=exec
-StartLimitIntervalSec=60
-StartLimitBurst=5
 User=zks95
 Group=zks95
 WorkingDirectory=/opt/new-donat-zks95
 EnvironmentFile=/etc/new-donat-zks95/.env
-ExecStart=/opt/new-donat-zks95/.venv/bin/gunicorn --workers 2 --bind 127.0.0.1:8015 --access-logfile - --error-logfile - wsgi:app
-ExecStartPost=-/opt/new-donat-zks95/.venv/bin/python /opt/new-donat-zks95/scripts/notify_service_event.py startup
+ExecStart=/opt/new-donat-zks95/.venv/bin/gunicorn --config /opt/new-donat-zks95/config/gunicorn.conf.py wsgi:app
+ExecReload=/bin/kill -s HUP $MAINPID
+ExecStartPost=-/usr/bin/timeout 20s /opt/new-donat-zks95/.venv/bin/python /opt/new-donat-zks95/scripts/notify_service_event.py startup
+TimeoutStopSec=40
 Restart=always
 RestartSec=5
 PrivateTmp=true

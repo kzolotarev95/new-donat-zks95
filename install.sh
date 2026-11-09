@@ -6,6 +6,8 @@ log(){ printf '\033[1;33m[install]\033[0m %s\n' "$*"; }
 warn(){ printf '\033[1;33m[warning]\033[0m %s\n' "$*" >&2; }
 fatal(){ printf '\033[1;31m[error]\033[0m %s\n' "$*" >&2; }
 [[ "${EUID}" -eq 0 ]] || fatal "Запустите установщик через sudo."
+exec 9>/run/lock/new-donat-zks95-maintenance.lock
+flock -n 9 || fatal "Другая установка, проверка или обновление проекта уже выполняется."
 [[ -f /etc/os-release ]] || fatal "Не удалось определить операционную систему."
 . /etc/os-release
 [[ "${ID:-}" == "ubuntu" ]] || fatal "Поддерживается Ubuntu 24.04/26.04 LTS. Обнаружено: ${PRETTY_NAME:-unknown}."
@@ -79,12 +81,15 @@ if [[ "${ADMIN_COUNT}" == "0" ]]; then
   runuser -u "${APP_USER}" -- env PYTHONPATH="${APP_DIR}" DATABASE_PATH="${DB_PATH}" "${APP_DIR}/.venv/bin/python" "${APP_DIR}/scripts/create_admin.py"
 fi
 log "Устанавливаю systemd service"
-install -m 0644 "${APP_DIR}/config/systemd/${SERVICE_NAME}" "/etc/systemd/system/${SERVICE_NAME}"
-install -m 0644 "${APP_DIR}/config/systemd/${ALERT_SERVICE_NAME}" "/etc/systemd/system/${ALERT_SERVICE_NAME}"
+for UNIT_FILE in "${APP_DIR}"/config/systemd/*.service "${APP_DIR}"/config/systemd/*.timer; do
+  [[ -f "${UNIT_FILE}" ]] || continue
+  install -m 0644 "${UNIT_FILE}" "/etc/systemd/system/$(basename "${UNIT_FILE}")"
+done
 systemctl daemon-reload; systemctl enable "${SERVICE_NAME}"; systemctl enable "${ALERT_SERVICE_NAME}" >/dev/null 2>&1 || true; systemctl restart "${SERVICE_NAME}"
+systemctl enable --now "${APP_NAME}-health.timer"
 log "Проверяю и согласую Nginx, не затрагивая чужие сайты"
 BACKUP_DIR="${BACKUP_DIR}/install-$(date +%Y%m%d-%H%M%S)"
-SITE_DOMAIN="${SITE_DOMAIN}" APP_DIR="${APP_DIR}" APP_PORT="${APP_PORT}" BACKUP_DIR="${BACKUP_DIR}" "${APP_DIR}/scripts/reconcile_nginx.sh"
+env SITE_DOMAIN="${SITE_DOMAIN}" APP_DIR="${APP_DIR}" APP_PORT="${APP_PORT}" BACKUP_DIR="${BACKUP_DIR}" "${APP_DIR}/scripts/reconcile_nginx.sh"
 PUBLIC_URL="http://${SITE_DOMAIN}"
 SSL_STATUS="не запрошен"
 if [[ "${SETUP_SSL,,}" == "y" || "${SETUP_SSL,,}" == "yes" ]]; then

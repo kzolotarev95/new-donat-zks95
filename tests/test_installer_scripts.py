@@ -44,7 +44,8 @@ def test_uninstall_is_scoped_and_keeps_nginx_packages_and_certificates():
 def test_runtime_port_is_unified():
     assert '8015' in read("run.py")
     assert '8015' in read("run.sh")
-    assert '127.0.0.1:8015' in read("config/systemd/new-donat-zks95.service")
+    assert 'config/gunicorn.conf.py' in read("config/systemd/new-donat-zks95.service")
+    assert '127.0.0.1:8015' in read("config/gunicorn.conf.py")
     assert '__APP_PORT__' in read("config/nginx/new-donat-zks95.conf.template")
 
 
