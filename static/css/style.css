@@ -58,7 +58,9 @@ body{background:radial-gradient(circle at 86% 0,rgba(225,6,32,.11),transparent 2
 @media(max-width:760px){.donor-create-form{grid-template-columns:1fr}.donor-create-form label:nth-of-type(5){grid-column:auto}.donor-create-form .button{width:100%}.donor-admin-row{grid-template-columns:1fr;grid-template-areas:"name" "nickname" "color" "amount" "social" "note" "active" "pinned" "save" "delete"}.donor-admin-row .button{width:100%}}
 
 /* Center donor copy and make pinned supporters visibly special. */
+.donor-card{position:relative;justify-content:center;padding-inline:34px}
 .donor-card>div{text-align:center;min-width:0;flex:1}
+.donor-card .donor-check,.donor-card .donor-pin{position:absolute;inset-block:0;right:14px;display:flex;align-items:center;margin-left:0}
 .donor-card.is-pinned{border-color:rgba(255,209,102,.78);background:linear-gradient(135deg,rgba(255,209,102,.13),rgba(225,6,32,.08) 48%,#0d0e11);box-shadow:0 0 0 1px rgba(255,209,102,.16),0 10px 28px rgba(255,184,60,.12)}
 .donor-card.is-pinned:hover{border-color:#ffd166;background:linear-gradient(135deg,rgba(255,209,102,.18),rgba(225,6,32,.12) 48%,#17191f)}
 .donor-card.is-pinned .donor-name{background:linear-gradient(110deg,#ffd166 0%,#fff4c2 42%,#ffd166 64%);background-size:220% 100%;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
