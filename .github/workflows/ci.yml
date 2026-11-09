@@ -21,9 +21,13 @@ jobs:
           python-version: ${{ matrix.python-version }}
           cache: pip
       - run: python -m pip install -r requirements.txt pytest
-      - run: python -m compileall -q app run.py wsgi.py
+      - run: python -m compileall -q app scripts config/gunicorn.conf.py run.py wsgi.py
       - run: pytest -q
-      - run: bash -n install.sh update.sh uninstall.sh run.sh scripts/reconcile_nginx.sh scripts/remove_nginx.sh vps/*.sh
+      - name: Check every shell script
+        run: |
+          for script in install.sh update.sh uninstall.sh run.sh scripts/*.sh vps/*.sh; do
+            bash -n "$script"
+          done
       - uses: ludeeus/action-shellcheck@master
         with:
           scandir: ./

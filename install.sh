@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 IFS=$'\n\t'
-APP_NAME="new-donat-zks95"; APP_USER="zks95"; APP_DIR="/opt/${APP_NAME}"; ETC_DIR="/etc/${APP_NAME}"; DATA_DIR="/var/lib/${APP_NAME}"; BACKUP_DIR="/var/backups/${APP_NAME}"; LOG_DIR="/var/log/${APP_NAME}"; APP_PORT="8015"; SERVICE_NAME="${APP_NAME}.service"; ALERT_SERVICE_NAME="${APP_NAME}-alert.service"; SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+APP_NAME="new-donat-zks95"; APP_USER="zks95"; APP_DIR="/opt/${APP_NAME}"; ETC_DIR="/etc/${APP_NAME}"; DATA_DIR="/var/lib/${APP_NAME}"; BACKUP_DIR="/var/backups/${APP_NAME}"; LOG_DIR="/var/log/${APP_NAME}"; APP_PORT="8015"; SERVICE_NAME="${APP_NAME}.service"; SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 log(){ printf '\033[1;33m[install]\033[0m %s\n' "$*"; }
 warn(){ printf '\033[1;33m[warning]\033[0m %s\n' "$*" >&2; }
 fatal(){ printf '\033[1;31m[error]\033[0m %s\n' "$*" >&2; }
@@ -85,7 +85,7 @@ for UNIT_FILE in "${APP_DIR}"/config/systemd/*.service "${APP_DIR}"/config/syste
   [[ -f "${UNIT_FILE}" ]] || continue
   install -m 0644 "${UNIT_FILE}" "/etc/systemd/system/$(basename "${UNIT_FILE}")"
 done
-systemctl daemon-reload; systemctl enable "${SERVICE_NAME}"; systemctl enable "${ALERT_SERVICE_NAME}" >/dev/null 2>&1 || true; systemctl restart "${SERVICE_NAME}"
+systemctl daemon-reload; systemctl enable "${SERVICE_NAME}"; systemctl restart "${SERVICE_NAME}"
 systemctl enable --now "${APP_NAME}-health.timer"
 log "Проверяю и согласую Nginx, не затрагивая чужие сайты"
 BACKUP_DIR="${BACKUP_DIR}/install-$(date +%Y%m%d-%H%M%S)"

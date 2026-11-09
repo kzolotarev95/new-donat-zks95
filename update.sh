@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 IFS=$'\n\t'
-APP_NAME="new-donat-zks95"; APP_USER="zks95"; APP_DIR="/opt/${APP_NAME}"; DATA_DIR="/var/lib/${APP_NAME}"; ETC_DIR="/etc/${APP_NAME}"; BACKUP_DIR="/var/backups/${APP_NAME}"; SERVICE_NAME="${APP_NAME}.service"; ALERT_SERVICE_NAME="${APP_NAME}-alert.service"; APP_PORT="8015"; HEALTH_URL="http://127.0.0.1:${APP_PORT}/healthz"
+APP_NAME="new-donat-zks95"; APP_USER="zks95"; APP_DIR="/opt/${APP_NAME}"; DATA_DIR="/var/lib/${APP_NAME}"; ETC_DIR="/etc/${APP_NAME}"; BACKUP_DIR="/var/backups/${APP_NAME}"; SERVICE_NAME="${APP_NAME}.service"; APP_PORT="8015"; HEALTH_URL="http://127.0.0.1:${APP_PORT}/healthz"
 log(){ printf '\033[1;33m[update]\033[0m %s\n' "$*"; }
 warn(){ printf '\033[1;33m[warning]\033[0m %s\n' "$*" >&2; }
 fatal(){ printf '\033[1;31m[error]\033[0m %s\n' "$*" >&2; exit 1; }
@@ -32,9 +32,9 @@ repair_runtime(){
   [[ -r "${ETC_DIR}/.env" ]] || fatal "Не найден ${ETC_DIR}/.env; настройки сохранены, ремонт остановлен."
   chown root:root "${ETC_DIR}/.env"; chmod 0600 "${ETC_DIR}/.env"
   install -d -o "${APP_USER}" -g "${APP_USER}" -m 0750 "${DATA_DIR}" "/var/log/${APP_NAME}"
-  runuser -u "${APP_USER}" -- "${APP_DIR}/.venv/bin/pip" install -r requirements.txt
+  runuser -u "${APP_USER}" -- "${APP_DIR}/.venv/bin/pip" install -r requirements.txt || return
   DB_PATH="$(awk -F= '/^DATABASE_PATH=/{print substr($0,index($0,$2)); exit}' "${ETC_DIR}/.env")"; [[ -n "${DB_PATH}" ]] || DB_PATH="${DATA_DIR}/site.db"
-  runuser -u "${APP_USER}" -- env PYTHONPATH="${APP_DIR}" DATABASE_PATH="${DB_PATH}" "${APP_DIR}/.venv/bin/python" - <<'PY'
+  runuser -u "${APP_USER}" -- env PYTHONPATH="${APP_DIR}" DATABASE_PATH="${DB_PATH}" "${APP_DIR}/.venv/bin/python" - <<'PY' || return
 from app import create_app
 from app.db import get_db
 app = create_app()
@@ -45,9 +45,10 @@ PY
   cmp -s "${APP_DIR}/config/systemd/${SERVICE_NAME}" "/etc/systemd/system/${SERVICE_NAME}" || SERVICE_CHANGED=1
   for UNIT_FILE in "${APP_DIR}"/config/systemd/*.service "${APP_DIR}"/config/systemd/*.timer; do
     [[ -f "${UNIT_FILE}" ]] || continue
-    install -m 0644 "${UNIT_FILE}" "/etc/systemd/system/$(basename "${UNIT_FILE}")"
+    install -m 0644 "${UNIT_FILE}" "/etc/systemd/system/$(basename "${UNIT_FILE}")" || return
   done
-  systemctl daemon-reload; systemctl enable "${SERVICE_NAME}"; systemctl enable "${ALERT_SERVICE_NAME}" >/dev/null 2>&1 || true
+  systemctl daemon-reload || return
+  systemctl enable "${SERVICE_NAME}" || return
 }
 if ! repair_runtime; then
   if [[ "${OLD_REV}" != "${NEW_REV}" ]]; then git reset --hard "${OLD_REV}" || true; fi
@@ -71,7 +72,7 @@ if ! curl --fail --silent --connect-timeout 2 --max-time 5 --retry 4 --retry-del
   if [[ "${OLD_REV}" != "${NEW_REV}" ]]; then git reset --hard "${OLD_REV}"; repair_runtime || true; systemctl restart "${SERVICE_NAME}" || true; fi
   fatal "Health check/порт не прошёл; выполнен откат кода при необходимости."
 fi
-log "Готово. Сервис слушает 127.0.0.1:${APP_PORT}; бэкап: ${BACKUP}"
 if [[ -f "${APP_DIR}/config/systemd/${APP_NAME}-health.timer" ]]; then
   systemctl enable --now "${APP_NAME}-health.timer"
 fi
+log "Готово. Сервис слушает 127.0.0.1:${APP_PORT}; бэкап: ${BACKUP}"
