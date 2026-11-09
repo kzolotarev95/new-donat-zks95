@@ -105,6 +105,9 @@ else
   sed -e "s|__SITE_DOMAIN__|${SITE_DOMAIN}|g" -e "s|__APP_PORT__|${APP_PORT}|g" "${TEMPLATE}" > "${TMP_CONFIG}"
 fi
 
+# Upgrade the project's existing Certbot configuration without replacing TLS.
+python3 "${APP_DIR}/scripts/upgrade_nginx.py" "${TMP_CONFIG}" "${APP_PORT}"
+
 if [[ -e "${NGINX_ENABLED}" || -L "${NGINX_ENABLED}" ]]; then
   target="$(readlink -f "${NGINX_ENABLED}" 2>/dev/null || printf '%s' "${NGINX_ENABLED}")"
   if ! owned_config "${target}" "${NGINX_ENABLED}"; then
