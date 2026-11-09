@@ -27,11 +27,11 @@ else
 fi
 repair_runtime(){
   [[ -r "${ETC_DIR}/.env" ]] || fatal "Не найден ${ETC_DIR}/.env; настройки сохранены, ремонт остановлен."
-  chown root:"${APP_USER}" "${ETC_DIR}/.env"; chmod 0640 "${ETC_DIR}/.env"
+  chown root:root "${ETC_DIR}/.env"; chmod 0600 "${ETC_DIR}/.env"
   install -d -o "${APP_USER}" -g "${APP_USER}" -m 0750 "${DATA_DIR}" "/var/log/${APP_NAME}"
   runuser -u "${APP_USER}" -- "${APP_DIR}/.venv/bin/pip" install -r requirements.txt
   DB_PATH="$(awk -F= '/^DATABASE_PATH=/{print substr($0,index($0,$2)); exit}' "${ETC_DIR}/.env")"; [[ -n "${DB_PATH}" ]] || DB_PATH="${DATA_DIR}/site.db"
-  runuser -u "${APP_USER}" -- env DATABASE_PATH="${DB_PATH}" "${APP_DIR}/.venv/bin/python" - <<'PY'
+  runuser -u "${APP_USER}" -- env PYTHONPATH="${APP_DIR}" DATABASE_PATH="${DB_PATH}" "${APP_DIR}/.venv/bin/python" - <<'PY'
 from app import create_app
 from app.db import get_db
 app = create_app()

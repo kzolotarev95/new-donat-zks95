@@ -16,8 +16,10 @@ from werkzeug.security import generate_password_hash  # noqa: E402
 
 app = create_app()
 parser = argparse.ArgumentParser()
-parser.add_argument("--default", action="store_true", help="Create/reset admin with temporary password admin")
+parser.add_argument("--default", action="store_true", help=argparse.SUPPRESS)
 args = parser.parse_args()
+if args.default and os.environ.get("APP_ENV", "production").strip().lower() == "production":
+    raise SystemExit("The insecure admin/admin bootstrap is disabled in production. Run without --default.")
 with app.app_context():
     if args.default:
         username, password = "admin", "admin"

@@ -52,13 +52,13 @@ PAYMENT_CURRENCY=RUB
 PORT=${APP_PORT}
 EOF
 else log "Сохраняю существующий ${ENV_FILE}"; fi
-chown root:"${APP_USER}" "${ENV_FILE}"; chmod 0640 "${ENV_FILE}"
+chown root:root "${ENV_FILE}"; chmod 0600 "${ENV_FILE}"
 log "Создаю виртуальное окружение и ставлю Python-зависимости"
 if [[ ! -x "${APP_DIR}/.venv/bin/python" ]]; then runuser -u "${APP_USER}" -- python3 -m venv "${APP_DIR}/.venv"; fi
 runuser -u "${APP_USER}" -- "${APP_DIR}/.venv/bin/pip" install --upgrade pip
 runuser -u "${APP_USER}" -- "${APP_DIR}/.venv/bin/pip" install -r "${APP_DIR}/requirements.txt"
 DB_PATH="$(awk -F= '/^DATABASE_PATH=/{print substr($0,index($0,$2)); exit}' "${ENV_FILE}")"; [[ -n "${DB_PATH}" ]] || DB_PATH="${DATA_DIR}/site.db"
-runuser -u "${APP_USER}" -- env DATABASE_PATH="${DB_PATH}" "${APP_DIR}/.venv/bin/python" - <<'PY'
+runuser -u "${APP_USER}" -- env PYTHONPATH="${APP_DIR}" DATABASE_PATH="${DB_PATH}" "${APP_DIR}/.venv/bin/python" - <<'PY'
 from app import create_app
 from app.db import get_db
 app = create_app()
@@ -66,7 +66,7 @@ with app.app_context():
     get_db().execute("SELECT 1").fetchone()
 print("database ready")
 PY
-ADMIN_COUNT="$(runuser -u "${APP_USER}" -- env DATABASE_PATH="${DB_PATH}" "${APP_DIR}/.venv/bin/python" - <<'PY'
+ADMIN_COUNT="$(runuser -u "${APP_USER}" -- env PYTHONPATH="${APP_DIR}" DATABASE_PATH="${DB_PATH}" "${APP_DIR}/.venv/bin/python" - <<'PY'
 from app import create_app
 from app.db import get_db
 app = create_app()
@@ -74,7 +74,10 @@ with app.app_context():
     print(get_db().execute("SELECT COUNT(*) FROM admin_users").fetchone()[0])
 PY
 )"
-if [[ "${ADMIN_COUNT}" == "0" ]]; then runuser -u "${APP_USER}" -- env DATABASE_PATH="${DB_PATH}" "${APP_DIR}/.venv/bin/python" "${APP_DIR}/scripts/create_admin.py" --default; fi
+if [[ "${ADMIN_COUNT}" == "0" ]]; then
+  log "Создайте уникальную учётную запись администратора (не используйте admin/admin)."
+  runuser -u "${APP_USER}" -- env PYTHONPATH="${APP_DIR}" DATABASE_PATH="${DB_PATH}" "${APP_DIR}/.venv/bin/python" "${APP_DIR}/scripts/create_admin.py"
+fi
 log "Устанавливаю systemd service"
 install -m 0644 "${APP_DIR}/config/systemd/${SERVICE_NAME}" "/etc/systemd/system/${SERVICE_NAME}"
 install -m 0644 "${APP_DIR}/config/systemd/${ALERT_SERVICE_NAME}" "/etc/systemd/system/${ALERT_SERVICE_NAME}"
@@ -82,9 +85,39 @@ systemctl daemon-reload; systemctl enable "${SERVICE_NAME}"; systemctl enable "$
 log "Проверяю и согласую Nginx, не затрагивая чужие сайты"
 BACKUP_DIR="${BACKUP_DIR}/install-$(date +%Y%m%d-%H%M%S)"
 SITE_DOMAIN="${SITE_DOMAIN}" APP_DIR="${APP_DIR}" APP_PORT="${APP_PORT}" BACKUP_DIR="${BACKUP_DIR}" "${APP_DIR}/scripts/reconcile_nginx.sh"
+PUBLIC_URL="http://${SITE_DOMAIN}"
+SSL_STATUS="не запрошен"
 if [[ "${SETUP_SSL,,}" == "y" || "${SETUP_SSL,,}" == "yes" ]]; then
-  if [[ -n "${CERTBOT_EMAIL}" ]]; then certbot --nginx -d "${SITE_DOMAIN}" --non-interactive --agree-tos --email "${CERTBOT_EMAIL}" --redirect || warn "Certbot не завершился. Проверьте DNS/порт 80 и повторите certbot --nginx -d ${SITE_DOMAIN}."; else warn "Email не указан. HTTPS оставлен без автоматической выдачи сертификата."; fi
-  nginx -t || fatal "После настройки HTTPS проверка Nginx не пройдена."
+  SSL_STATUS="не настроен"
+  if [[ -z "${CERTBOT_EMAIL}" ]]; then
+    warn "Email не указан. HTTPS пропущен; полная установка продолжается только с HTTP."
+  else
+    PUBLIC_IP="$(curl -4fsS --max-time 5 https://api.ipify.org 2>/dev/null || true)"
+    DNS_IPS="$(getent ahostsv4 "${SITE_DOMAIN}" 2>/dev/null | awk '{print $1}' | sort -u || true)"
+    DNS_OK=0
+    if [[ -n "${PUBLIC_IP}" && -n "${DNS_IPS}" ]] && grep -Fxq "${PUBLIC_IP}" <<<"${DNS_IPS}"; then DNS_OK=1; fi
+    PORT80_OK=0
+    if ss -lnt | grep -Eq '(:80|:http)[[:space:]]'; then
+      if curl --resolve "${SITE_DOMAIN}:80:127.0.0.1" -fsS --max-time 5 "http://${SITE_DOMAIN}/healthz" >/dev/null; then PORT80_OK=1; fi
+    fi
+    if [[ "${DNS_OK}" -ne 1 ]]; then
+      warn "HTTPS пропущен: DNS ${SITE_DOMAIN} не указывает на этот VPS (${PUBLIC_IP:-IP VPS не определён}; найдено: ${DNS_IPS:-нет записи})."
+    elif [[ "${PORT80_OK}" -ne 1 ]]; then
+      warn "HTTPS пропущен: порт 80 не отвечает на локальный health check."
+    elif certbot --nginx -d "${SITE_DOMAIN}" --non-interactive --agree-tos --email "${CERTBOT_EMAIL}" --redirect --keep-until-expiring; then
+      systemctl enable --now certbot.timer >/dev/null 2>&1 || true
+      if certbot renew --dry-run >/dev/null 2>&1; then
+        SSL_STATUS="настроен, продление проверено"
+      else
+        SSL_STATUS="настроен, dry-run продления требует проверки"
+        warn "Сертификат выпущен, но certbot renew --dry-run завершился с ошибкой."
+      fi
+      nginx -t || fatal "После настройки HTTPS проверка Nginx не пройдена."
+      PUBLIC_URL="https://${SITE_DOMAIN}"
+    else
+      warn "Certbot не завершился. Проверьте DNS и доступность TCP 80, затем повторите настройку."
+    fi
+  fi
 fi
 log "Проверяю запуск приложения и health check"; HEALTH_OK=0
 for _ in {1..20}; do if curl --fail --silent --show-error "http://127.0.0.1:${APP_PORT}/healthz" >/dev/null; then HEALTH_OK=1; break; fi; sleep 1; done
@@ -93,11 +126,12 @@ ss -lnt | grep -q ":${APP_PORT}[[:space:]]" || fatal "Порт ${APP_PORT} не 
 cat <<EOF
 
 Установка завершена.
-  Сайт:       http://${SITE_DOMAIN}
+  Сайт:       ${PUBLIC_URL}
   Порт:       127.0.0.1:${APP_PORT}
   Сервис:     systemctl status ${SERVICE_NAME}
   Уведомления: ${ALERT_SERVICE_NAME} (OnFailure/startup push)
-  Конфиг:     ${ENV_FILE} (права 0640, секреты не попадают в Git)
+  HTTPS:      ${SSL_STATUS}
+  Конфиг:     ${ENV_FILE} (права 0600, секреты не попадают в Git)
   База:       ${DATA_DIR}/site.db
   Обновление: sudo ${APP_DIR}/update.sh
   Удаление:   sudo ${APP_DIR}/uninstall.sh

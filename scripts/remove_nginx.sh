@@ -3,13 +3,14 @@ set -Eeuo pipefail
 
 APP_NAME="${APP_NAME:-new-donat-zks95}"
 SITE_DOMAIN="${SITE_DOMAIN:?SITE_DOMAIN is required}"
+DOMAIN_RE="$(printf '%s' "${SITE_DOMAIN}" | sed 's/[][\\.^$*+?(){}|]/\\&/g')"
 BACKUP_DIR="${BACKUP_DIR:-/var/backups/${APP_NAME}}"
 NGINX_AVAILABLE="/etc/nginx/sites-available/${APP_NAME}.conf"
 NGINX_ENABLED="/etc/nginx/sites-enabled/${APP_NAME}.conf"
 STAMP="$(date +%Y%m%d-%H%M%S)"
 
 mkdir -p "${BACKUP_DIR}"
-matches_domain(){ grep -Eiq "server_name[[:space:]].*${SITE_DOMAIN}([;[:space:]]|$)" "$1"; }
+matches_domain(){ grep -Eiq "server_name[[:space:]].*${DOMAIN_RE}([;[:space:]]|$)" "$1"; }
 owned_config(){
   local file="$1" entry="${2:-$1}"
   grep -Eiq 'Managed by new-donat-zks95|new-donat-zks95|ZKS95 Developer' "${file}" || \

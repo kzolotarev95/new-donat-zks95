@@ -5,6 +5,7 @@ APP_NAME="${APP_NAME:-new-donat-zks95}"
 APP_DIR="${APP_DIR:-/opt/${APP_NAME}}"
 APP_PORT="${APP_PORT:-8015}"
 SITE_DOMAIN="${SITE_DOMAIN:?SITE_DOMAIN is required}"
+DOMAIN_RE="$(printf '%s' "${SITE_DOMAIN}" | sed 's/[][\\.^$*+?(){}|]/\\&/g')"
 BACKUP_DIR="${BACKUP_DIR:-/var/backups/${APP_NAME}}"
 NGINX_AVAILABLE="/etc/nginx/sites-available/${APP_NAME}.conf"
 NGINX_ENABLED="/etc/nginx/sites-enabled/${APP_NAME}.conf"
@@ -22,7 +23,7 @@ TMP_CONFIG="$(mktemp)"
 trap 'rm -rf "${ROLLBACK_DIR}" "${TMP_CONFIG}"' EXIT
 
 matches_domain(){
-  grep -Eiq "server_name[[:space:]].*${SITE_DOMAIN}([;[:space:]]|$)" "$1"
+  grep -Eiq "server_name[[:space:]].*${DOMAIN_RE}([;[:space:]]|$)" "$1"
 }
 
 owned_config(){
