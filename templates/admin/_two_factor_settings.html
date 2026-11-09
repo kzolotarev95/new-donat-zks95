@@ -1,0 +1,52 @@
+<section class="settings-section two-factor-settings" id="two-factor">
+  <h2>2FA — двухфакторная защита</h2>
+  <p class="two-factor-status {{ 'is-enabled' if two_factor_enabled else '' }}">{{ 'Включена' if two_factor_enabled else 'Не включена' }}</p>
+  <p class="muted">При входе после пароля понадобится код из Google Authenticator, Microsoft Authenticator, 2FAS или другого приложения TOTP.</p>
+  {% if two_factor_enabled %}
+  <p class="muted">Неиспользованных резервных кодов: <strong>{{ recovery_count }}</strong>.</p>
+  <details class="two-factor-action">
+    <summary>Создать новые резервные коды</summary>
+    <p class="muted">Старые коды станут недействительны. Другие сеансы администратора будут завершены.</p>
+    <form method="post" action="{{ url_for('admin.two_factor_recovery_codes') }}" class="two-factor-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <label>Текущий пароль<input type="password" name="current_password" autocomplete="current-password" required></label>
+      <label>Код приложения или резервный код<input name="code" autocomplete="one-time-code" maxlength="32" required spellcheck="false" autocapitalize="off"></label>
+      <button class="button button-gold" type="submit">Создать новые коды</button>
+    </form>
+  </details>
+  <details class="two-factor-action">
+    <summary>Отключить 2FA</summary>
+    <p class="muted">Потребуются текущий пароль и действующий код. Другие сеансы будут завершены.</p>
+    <form method="post" action="{{ url_for('admin.two_factor_disable') }}" class="two-factor-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <label>Текущий пароль<input type="password" name="current_password" autocomplete="current-password" required></label>
+      <label>Код приложения или резервный код<input name="code" autocomplete="one-time-code" maxlength="32" required spellcheck="false" autocapitalize="off"></label>
+      <button class="button button-ghost" type="submit">Отключить 2FA</button>
+    </form>
+  </details>
+  {% elif setup_secret %}
+  <div class="two-factor-enrollment">
+    <img class="two-factor-qr" src="{{ url_for('admin.two_factor_qr') }}" width="224" height="224" alt="QR-код для подключения приложения-аутентификатора">
+    <div>
+      <p class="muted">1. Отсканируйте QR-код приложением. Для ручного добавления выберите TOTP, 6 цифр и период 30 секунд.</p>
+      <code class="two-factor-secret">{{ setup_secret }}</code>
+      <p class="muted">2. Введите код из приложения. Настройка действительна 10 минут. После включения сохраните резервные коды.</p>
+      <form method="post" action="{{ url_for('admin.two_factor_enable') }}" class="two-factor-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <label>Код из приложения<input name="code" inputmode="numeric" pattern="[0-9]{6}" minlength="6" maxlength="6" autocomplete="one-time-code" required></label>
+        <button class="button button-gold" type="submit">Подтвердить и включить 2FA</button>
+      </form>
+      <form method="post" action="{{ url_for('admin.two_factor_cancel') }}" class="two-factor-cancel">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="button button-ghost" type="submit">Отменить настройку</button>
+      </form>
+    </div>
+  </div>
+  {% else %}
+  <form method="post" action="{{ url_for('admin.two_factor_setup') }}" class="two-factor-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label>Подтвердите текущий пароль<input type="password" name="current_password" autocomplete="current-password" required></label>
+    <button class="button button-gold" type="submit">Подключить 2FA</button>
+  </form>
+  {% endif %}
+</section>

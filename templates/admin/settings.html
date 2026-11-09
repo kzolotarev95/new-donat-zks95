@@ -1,1 +1,28 @@
-{% extends "admin/base.html" %}{% block title %}Настройки — ZKS95 Admin{% endblock %}{% block content %}<div class="admin-title"><div><p class="eyebrow">Runtime configuration</p><h1>Настройки <em>системы.</em></h1></div></div><form class="admin-card settings-card" method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><div class="settings-sections">{% for section_title,fields in sections %}<section class="settings-section"><h2>{{ section_title }}</h2>{% for key,label,secret,kind,options in fields %}<label>{{ label }}{% if kind == 'select' %}<select name="{{ key }}">{% for option,option_label in options %}<option value="{{ option }}" {% if values[key] == option %}selected{% endif %}>{{ option_label }}</option>{% endfor %}</select>{% else %}<input name="{{ key }}" value="{{ values[key] }}" {% if secret %}placeholder="Оставьте пустым, чтобы сохранить текущее значение"{% endif %} autocomplete="off">{% endif %}</label>{% endfor %}</section>{% endfor %}</div><div class="settings-note">Эффект и скорость применяются ко всем страницам сайта сразу после сохранения. Секретные значения хранятся в SQLite в зашифрованном виде и не показываются обратно.</div><button class="button button-gold" type="submit">Сохранить настройки</button></form>{% include "admin/_backup_sections.html" %}{% endblock %}
+{% extends "admin/base.html" %}
+{% block title %}Настройки — ZKS95 Admin{% endblock %}
+{% block content %}
+<div class="admin-title"><div><p class="eyebrow">Runtime configuration</p><h1>Настройки <em>системы.</em></h1></div></div>
+<div class="admin-card settings-card">
+  <form id="site-settings-form" method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"></form>
+  <div class="settings-sections">
+    {% for section_title,fields in sections %}
+    <section class="settings-section">
+      <h2>{{ section_title }}</h2>
+      {% for key,label,secret,kind,options in fields %}
+      <label>{{ label }}
+        {% if kind == 'select' %}
+        <select form="site-settings-form" name="{{ key }}">{% for option,option_label in options %}<option value="{{ option }}" {% if values[key] == option %}selected{% endif %}>{{ option_label }}</option>{% endfor %}</select>
+        {% else %}
+        <input form="site-settings-form" name="{{ key }}" value="{{ values[key] }}" {% if secret %}placeholder="Оставьте пустым, чтобы сохранить текущее значение"{% endif %} autocomplete="off">
+        {% endif %}
+      </label>
+      {% endfor %}
+    </section>
+    {% if section_title == 'Google reCAPTCHA' %}{% include "admin/_two_factor_settings.html" %}{% endif %}
+    {% endfor %}
+  </div>
+  <div class="settings-note">Эффект и скорость применяются ко всем страницам сайта сразу после сохранения. Секретные значения хранятся в SQLite в зашифрованном виде и не показываются обратно.</div>
+  <button class="button button-gold" form="site-settings-form" type="submit">Сохранить настройки</button>
+</div>
+{% include "admin/_backup_sections.html" %}
+{% endblock %}

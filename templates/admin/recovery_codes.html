@@ -1,0 +1,16 @@
+{% extends "admin/base.html" %}
+{% block title %}Резервные коды 2FA — ZKS95 Admin{% endblock %}
+{% block content %}
+<section class="admin-card two-factor-recovery">
+  <h1>Сохраните резервные коды</h1>
+  <p class="two-factor-status is-enabled">2FA включена</p>
+  <p class="muted">Коды показываются только сейчас. Сохраните их в менеджере паролей или распечатайте. Каждый код заменяет код приложения при входе и работает один раз.</p>
+  <pre class="two-factor-codes" id="recovery-codes">{% for code in recovery_codes %}{{ code }}{{ '\n' if not loop.last else '' }}{% endfor %}</pre>
+  <p class="muted">Не передавайте эти коды другим. Код приложения, которым вы подтвердили настройку, уже использован — при следующем входе дождитесь нового кода.</p>
+  <div class="two-factor-recovery-actions">
+    <button class="button button-gold" type="button" id="download-recovery-codes">Скачать коды</button>
+    <a class="button button-ghost" href="{{ url_for('admin.settings', _anchor='two-factor') }}">Я сохранил коды</a>
+  </div>
+</section>
+{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='js/two-factor.js') }}" defer></script>{% endblock %}

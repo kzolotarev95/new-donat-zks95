@@ -33,7 +33,23 @@ CREATE TABLE IF NOT EXISTS admin_users (
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL,
     last_login_at TEXT,
-    must_change_password INTEGER NOT NULL DEFAULT 0
+    must_change_password INTEGER NOT NULL DEFAULT 0,
+    auth_version INTEGER NOT NULL DEFAULT 0,
+    totp_secret TEXT NOT NULL DEFAULT '',
+    totp_last_step INTEGER NOT NULL DEFAULT -1,
+    totp_pending_secret TEXT NOT NULL DEFAULT '',
+    totp_pending_id_hash TEXT NOT NULL DEFAULT '',
+    totp_pending_until INTEGER NOT NULL DEFAULT 0
+);
+CREATE TABLE IF NOT EXISTS admin_recovery_codes (
+    user_id INTEGER NOT NULL REFERENCES admin_users(id) ON DELETE CASCADE,
+    code_hash TEXT NOT NULL,
+    PRIMARY KEY (user_id, code_hash)
+);
+CREATE TABLE IF NOT EXISTS admin_auth_limits (
+    bucket TEXT PRIMARY KEY,
+    failures INTEGER NOT NULL DEFAULT 0,
+    reset_at INTEGER NOT NULL
 );
 CREATE TABLE IF NOT EXISTS app_settings (
     key TEXT PRIMARY KEY,
@@ -92,6 +108,16 @@ def init_db():
     columns = {row["name"] for row in db.execute("PRAGMA table_info(admin_users)").fetchall()}
     if "must_change_password" not in columns:
         db.execute("ALTER TABLE admin_users ADD COLUMN must_change_password INTEGER NOT NULL DEFAULT 0")
+    for name, definition in {
+        "auth_version": "INTEGER NOT NULL DEFAULT 0",
+        "totp_secret": "TEXT NOT NULL DEFAULT ''",
+        "totp_last_step": "INTEGER NOT NULL DEFAULT -1",
+        "totp_pending_secret": "TEXT NOT NULL DEFAULT ''",
+        "totp_pending_id_hash": "TEXT NOT NULL DEFAULT ''",
+        "totp_pending_until": "INTEGER NOT NULL DEFAULT 0",
+    }.items():
+        if name not in columns:
+            db.execute(f"ALTER TABLE admin_users ADD COLUMN {name} {definition}")
     payment_columns = {row["name"] for row in db.execute("PRAGMA table_info(payments)").fetchall()}
     if "customer_nickname" not in payment_columns:
         db.execute("ALTER TABLE payments ADD COLUMN customer_nickname TEXT")
@@ -259,14 +285,14 @@ def get_admin_user_by_id(user_id):
     return get_db().execute("SELECT * FROM admin_users WHERE id = ?", (user_id,)).fetchone()
 
 def update_admin_password(user_id, password_hash, must_change_password=0):
-    get_db().execute("UPDATE admin_users SET password_hash = ?, updated_at = ?, must_change_password = ? WHERE id = ?", (password_hash, _now(), must_change_password, user_id))
+    get_db().execute("UPDATE admin_users SET password_hash = ?, updated_at = ?, must_change_password = ?, auth_version = auth_version + 1 WHERE id = ?", (password_hash, _now(), must_change_password, user_id))
     get_db().commit()
 
 def update_admin_account(user_id, username, password_hash=None):
     if password_hash:
-        get_db().execute("UPDATE admin_users SET username = ?, password_hash = ?, updated_at = ?, must_change_password = 0 WHERE id = ?", (username, password_hash, _now(), user_id))
+        get_db().execute("UPDATE admin_users SET username = ?, password_hash = ?, updated_at = ?, must_change_password = 0, auth_version = auth_version + 1 WHERE id = ?", (username, password_hash, _now(), user_id))
     else:
-        get_db().execute("UPDATE admin_users SET username = ?, updated_at = ? WHERE id = ?", (username, _now(), user_id))
+        get_db().execute("UPDATE admin_users SET username = ?, updated_at = ?, auth_version = auth_version + 1 WHERE id = ?", (username, _now(), user_id))
     get_db().commit()
 
 def mark_admin_login(user_id):

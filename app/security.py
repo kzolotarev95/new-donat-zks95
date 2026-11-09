@@ -40,7 +40,31 @@ def require_csrf():
 def admin_required(view):
     @wraps(view)
     def wrapped(*args, **kwargs):
-        if not session.get("admin_user_id"):
+        if not authenticated_admin():
             return redirect(url_for("admin.login", next=request.path))
         return view(*args, **kwargs)
     return wrapped
+
+
+def authenticated_admin():
+    from .db import get_admin_user_by_id
+    user_id = session.get("admin_user_id")
+    if not user_id:
+        return None
+    user = get_admin_user_by_id(user_id)
+    if (not user or session.get("admin_auth_version", 0) != user["auth_version"]
+            or (user["totp_secret"] and session.get("admin_2fa") is not True)):
+        session.clear()
+        return None
+    return user
+
+
+def establish_admin_session(user, second_factor=False):
+    session.clear()
+    session.permanent = True
+    session["admin_user_id"] = user["id"]
+    session["admin_username"] = user["username"]
+    session["admin_auth_version"] = user["auth_version"]
+    session["admin_2fa"] = bool(second_factor)
+    session["must_change_password"] = bool(user["must_change_password"])
+    csrf_token()

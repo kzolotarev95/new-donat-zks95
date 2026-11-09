@@ -4,16 +4,18 @@ import logging
 import math
 import re
 import sqlite3
+import time
 from decimal import Decimal, InvalidOperation
 from functools import wraps
 from urllib.parse import urlparse
 from io import BytesIO
-from flask import Blueprint, flash, redirect, render_template, request, session, url_for, current_app, jsonify, send_file
+from flask import Blueprint, abort, flash, redirect, render_template, request, session, url_for, current_app, jsonify, send_file
 from werkzeug.security import check_password_hash, generate_password_hash
 from .db import (DONOR_COLORS, count_payments, count_push_subscriptions, create_donor, delete_donor, delete_push_subscription, get_admin_user, get_admin_user_by_id, get_payment, get_db, list_donors, list_payments, mark_admin_login, payment_stats, record_donor_payment, update_admin_account, update_admin_password, update_donor, update_payment, upsert_push_subscription)
 from .payments import fetch_payment
 from .push import generate_vapid_keys, notify_payment_success, push_settings, send_push
-from .security import admin_required, csrf_token, require_csrf
+from .security import admin_required, authenticated_admin, csrf_token, establish_admin_session, require_csrf
+from . import two_factor
 from .settings import get_runtime_setting, set_runtime_setting
 from .visual import VISUAL_EFFECTS, VISUAL_SPEEDS, normalize_visual_effect, normalize_visual_speed
 from .captcha import site_key as recaptcha_site_key, verify as verify_recaptcha
@@ -30,35 +32,106 @@ def admin_context():
 
 @admin_bp.before_request
 def protect_admin_posts():
-    if request.method == "POST":
+    # A known or short signing key would let an attacker forge both login stages.
+    secret = str(current_app.config.get("SECRET_KEY") or "")
+    if current_app.config["APP_ENV"] == "production" and len(secret) < 32:
+        abort(503, description="Для входа в админку задайте надёжный APP_SECRET_KEY длиной от 32 символов в конфигурации сервера.")
+    if request.method in {"POST", "PUT", "PATCH", "DELETE"}:
         require_csrf()
+
+
+@admin_bp.after_request
+def protect_admin_responses(response):
+    response.headers["Cache-Control"] = "no-store, private"
+    response.headers["Referrer-Policy"] = "no-referrer"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    return response
+
+
+def _safe_admin_next(target):
+    target = str(target or "")
+    try:
+        parsed = urlparse(target)
+    except ValueError:
+        return url_for("admin.dashboard")
+    if (parsed.scheme or parsed.netloc or "\\" in target or any(ord(char) < 32 for char in target)
+            or not (parsed.path == "/admin" or parsed.path.startswith("/admin/"))):
+        return url_for("admin.dashboard")
+    return target
+
+
+def _finish_login(user, target=None, second_factor=False):
+    establish_admin_session(user, second_factor)
+    mark_admin_login(user["id"])
+    return redirect(_safe_admin_next(target))
+
+
+def _pending_login_user():
+    user = get_admin_user_by_id(session.get("two_factor_user_id", 0))
+    issued = session.get("two_factor_issued", 0)
+    now = time.time()
+    if (not user or not user["totp_secret"] or not 0 <= now - issued < two_factor.CHALLENGE_SECONDS
+            or session.get("two_factor_version") != user["auth_version"]):
+        return None
+    return user
 
 
 @admin_bp.get("/login")
 def login():
-    if session.get("admin_user_id"):
+    if authenticated_admin():
         return redirect(url_for("admin.dashboard"))
+    if _pending_login_user():
+        return redirect(url_for("admin.two_factor_login"))
     return render_template("admin/login.html", recaptcha_site_key=recaptcha_site_key())
 
 
 @admin_bp.post("/login")
 def login_post():
+    session.pop("two_factor_user_id", None)
     username = (request.form.get("username") or "").strip()
     password = request.form.get("password") or ""
+    bucket = f"password:{username.casefold()[:128]}"
+    ip_bucket = f"password-ip:{request.remote_addr}"
+    try:
+        two_factor.take_attempt(bucket, limit=10)
+        two_factor.take_attempt(ip_bucket, limit=60)
+    except two_factor.AuthError as exc:
+        return render_template("admin/login.html", username=username, login_error=str(exc), recaptcha_site_key=recaptcha_site_key()), exc.status
     if not verify_recaptcha(request.form.get("g-recaptcha-response")):
         return render_template("admin/login.html", username=username, captcha_error="Подтвердите, что вы не робот.", recaptcha_site_key=recaptcha_site_key()), 400
     user = get_admin_user(username)
     if not user or not check_password_hash(user["password_hash"], password):
         flash("Неверный логин или пароль.", "error")
         return render_template("admin/login.html", username=username, recaptcha_site_key=recaptcha_site_key()), 401
-    session.clear()
-    session.permanent = True
-    session["admin_user_id"] = user["id"]
-    session["admin_username"] = user["username"]
-    session["must_change_password"] = bool(user["must_change_password"])
-    session["_csrf_token"] = csrf_token()
-    mark_admin_login(user["id"])
-    return redirect(request.args.get("next") or url_for("admin.dashboard"))
+    two_factor.clear_rate(bucket)
+    target = _safe_admin_next(request.args.get("next"))
+    if user["totp_secret"]:
+        session.clear()
+        session["two_factor_user_id"] = user["id"]
+        session["two_factor_version"] = user["auth_version"]
+        session["two_factor_issued"] = int(time.time())
+        session["two_factor_next"] = target
+        return redirect(url_for("admin.two_factor_login"))
+    return _finish_login(user, target)
+
+
+@admin_bp.route("/login/2fa", methods=["GET", "POST"])
+def two_factor_login():
+    user = _pending_login_user()
+    if not user:
+        session.clear()
+        flash("Время подтверждения истекло. Введите логин и пароль заново.", "error")
+        return redirect(url_for("admin.login"))
+    recovery = request.args.get("recovery") == "1"
+    if request.method == "POST":
+        try:
+            two_factor.consume_factor(user, request.form.get("code"))
+        except two_factor.AuthError as exc:
+            return render_template("admin/two_factor_login.html", recovery=recovery, error=str(exc)), exc.status
+        target = session.get("two_factor_next")
+        return _finish_login(user, target, second_factor=True)
+    return render_template("admin/two_factor_login.html", recovery=recovery)
 
 
 @admin_bp.post("/logout")
@@ -210,6 +283,7 @@ def password():
             flash("Пароли не совпадают.", "error")
         else:
             update_admin_password(user["id"], generate_password_hash(new), 0)
+            establish_admin_session(get_admin_user_by_id(user["id"]), session.get("admin_2fa", False))
             flash("Пароль изменён.", "success")
             session["must_change_password"] = False
             return redirect(url_for("admin.dashboard"))
@@ -235,8 +309,7 @@ def account():
             flash("Такой логин уже занят.", "error")
         else:
             update_admin_account(user["id"], username, generate_password_hash(new_password) if new_password else None)
-            session["admin_username"] = username
-            session["must_change_password"] = False
+            establish_admin_session(get_admin_user_by_id(user["id"]), session.get("admin_2fa", False))
             flash("Данные аккаунта сохранены.", "success")
             return redirect(url_for("admin.account"))
     return render_template("admin/account.html", user=user)
@@ -404,7 +477,102 @@ def settings():
         for key, _label, secret, _kind, _options in fields:
             value = get_runtime_setting(key, current_app.config.get(key, ""))
             values[key] = "" if secret else value
-    return render_template("admin/settings.html", sections=sections, values=values)
+    user = get_admin_user_by_id(session["admin_user_id"])
+    return render_template("admin/settings.html", sections=sections, values=values,
+                           two_factor_enabled=bool(user["totp_secret"]),
+                           setup_secret=two_factor.pending_setup(user),
+                           recovery_count=two_factor.recovery_count(user))
+
+
+def _confirm_security_password(user):
+    bucket = f"security:{user['id']}"
+    two_factor.take_attempt(bucket)
+    if not check_password_hash(user["password_hash"], request.form.get("current_password") or ""):
+        raise two_factor.AuthError("Текущий пароль неверен.")
+    two_factor.clear_rate(bucket)
+
+
+@admin_bp.post("/2fa/setup")
+@admin_required
+def two_factor_setup():
+    user = get_admin_user_by_id(session["admin_user_id"])
+    try:
+        _confirm_security_password(user)
+        two_factor.start_setup(user)
+    except two_factor.AuthError as exc:
+        flash(str(exc), "error")
+    return redirect(url_for("admin.settings", _anchor="two-factor"))
+
+
+@admin_bp.get("/2fa/qr.svg")
+@admin_required
+def two_factor_qr():
+    import pyotp
+    import qrcode
+    import qrcode.image.svg
+    user = get_admin_user_by_id(session["admin_user_id"])
+    secret = two_factor.pending_setup(user)
+    if not secret:
+        abort(404)
+    uri = pyotp.TOTP(secret).provisioning_uri(name=user["username"], issuer_name="ZKS95 Developer")
+    image = qrcode.make(uri, image_factory=qrcode.image.svg.SvgPathFillImage, border=4)
+    output = BytesIO()
+    image.save(output)
+    return send_file(BytesIO(output.getvalue()), mimetype="image/svg+xml", max_age=0)
+
+
+@admin_bp.post("/2fa/enable")
+@admin_required
+def two_factor_enable():
+    user = get_admin_user_by_id(session["admin_user_id"])
+    try:
+        codes = two_factor.enable(user, request.form.get("code"))
+    except two_factor.AuthError as exc:
+        flash(str(exc), "error")
+        return redirect(url_for("admin.settings", _anchor="two-factor"))
+    establish_admin_session(get_admin_user_by_id(user["id"]), second_factor=True)
+    log.info("Admin 2FA enabled user_id=%s", user["id"])
+    return render_template("admin/recovery_codes.html", recovery_codes=codes)
+
+
+@admin_bp.post("/2fa/cancel")
+@admin_required
+def two_factor_cancel():
+    two_factor.cancel_setup(get_admin_user_by_id(session["admin_user_id"]))
+    return redirect(url_for("admin.settings", _anchor="two-factor"))
+
+
+@admin_bp.post("/2fa/recovery-codes")
+@admin_required
+def two_factor_recovery_codes():
+    user = get_admin_user_by_id(session["admin_user_id"])
+    try:
+        _confirm_security_password(user)
+        two_factor.consume_factor(user, request.form.get("code"))
+        codes = two_factor.rotate_recovery_codes(user)
+    except two_factor.AuthError as exc:
+        flash(str(exc), "error")
+        return redirect(url_for("admin.settings", _anchor="two-factor"))
+    establish_admin_session(get_admin_user_by_id(user["id"]), second_factor=True)
+    log.info("Admin recovery codes rotated user_id=%s", user["id"])
+    return render_template("admin/recovery_codes.html", recovery_codes=codes)
+
+
+@admin_bp.post("/2fa/disable")
+@admin_required
+def two_factor_disable():
+    user = get_admin_user_by_id(session["admin_user_id"])
+    try:
+        _confirm_security_password(user)
+        two_factor.consume_factor(user, request.form.get("code"))
+        two_factor.disable(user)
+    except two_factor.AuthError as exc:
+        flash(str(exc), "error")
+        return redirect(url_for("admin.settings", _anchor="two-factor"))
+    establish_admin_session(get_admin_user_by_id(user["id"]))
+    flash("2FA отключена. Резервные коды аннулированы.", "success")
+    log.info("Admin 2FA disabled user_id=%s", user["id"])
+    return redirect(url_for("admin.settings", _anchor="two-factor"))
 
 
 @admin_bp.get("/api/summary")

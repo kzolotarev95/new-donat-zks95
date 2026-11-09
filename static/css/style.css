@@ -195,3 +195,31 @@ h2{font-size:clamp(1.55rem,3vw,2.45rem)!important;line-height:1.12;letter-spacin
 @keyframes checkoutShine{0%,55%{left:-55%}85%,100%{left:140%}}
 @media(max-width:380px){.donate-form .pay-button{gap:8px;padding-inline:10px}.pay-button .pay-sbp-mark{padding-right:8px}.pay-sbp-mark span{display:none}.pay-button .pay-label{font-size:.74rem;white-space:nowrap}}
 @media(prefers-reduced-motion:reduce){.pay-button::after{animation:none}.donate-form .pay-button,.pay-chevron{transition:none}}
+
+/* Account-bound two-factor authentication. */
+.two-factor-settings{scroll-margin-top:20px}
+.two-factor-settings>.muted{line-height:1.65}
+.two-factor-status{display:inline-flex;margin:0 0 12px;padding:4px 9px;border:1px solid rgba(225,6,32,.45);border-radius:5px;color:#ff6d7f;font-size:.68rem;font-weight:700}
+.two-factor-status.is-enabled{border-color:rgba(58,190,125,.4);color:#69dba0;background:rgba(58,190,125,.07)}
+.two-factor-form{display:grid;gap:12px;max-width:440px}
+.settings-section .two-factor-form label{margin:0}
+.two-factor-form .button{justify-self:start}
+.two-factor-action{margin-top:14px;padding-top:14px;border-top:1px solid var(--line)}
+.two-factor-action summary{cursor:pointer;font-size:.76rem;font-weight:700;color:var(--text)}
+.two-factor-action>.muted{margin-top:12px}
+.two-factor-enrollment{display:grid;grid-template-columns:224px minmax(0,1fr);gap:22px;align-items:start;margin-top:16px}
+.two-factor-enrollment>div{min-width:0}
+.two-factor-qr{display:block;max-width:100%;height:auto;aspect-ratio:1;background:#fff;border-radius:8px}
+.two-factor-secret{display:block;margin:12px 0;padding:12px;border:1px solid var(--line);border-radius:4px;background:var(--bg);font:400 .78rem monospace;overflow-wrap:anywhere;user-select:all}
+.two-factor-cancel{margin-top:12px}
+.two-factor-settings .button-ghost,.two-factor-back .button-ghost,.two-factor-recovery .button-ghost{color:var(--gold);background:rgba(225,6,32,.07);border-color:rgba(225,6,32,.45)}
+.two-factor-error{margin:0 0 14px;padding:10px;border:1px solid rgba(225,6,32,.4);border-radius:4px;color:#ff8a97;font-size:.72rem;line-height:1.5;text-align:center}
+.two-factor-login>.muted{margin-bottom:20px;text-align:center;line-height:1.6}
+.two-factor-link{display:block;margin:16px auto 0;text-align:center;color:var(--gold);font-size:.72rem;text-underline-offset:3px}
+.two-factor-back{margin-top:18px;text-align:center}
+.two-factor-recovery{max-width:600px;margin-inline:auto}
+.admin-body .two-factor-recovery h1{font-size:1.4rem!important;line-height:1.3;letter-spacing:-.025em}
+.two-factor-recovery>.muted{line-height:1.7}
+.two-factor-codes{margin:20px 0;padding:18px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--text);font:400 .85rem/2 monospace;text-align:center;white-space:pre-wrap;overflow-wrap:anywhere;user-select:all}
+.two-factor-recovery-actions{display:flex;gap:10px;flex-wrap:wrap}
+@media(max-width:760px){.two-factor-enrollment{grid-template-columns:minmax(0,1fr);gap:16px}.two-factor-qr{margin-inline:auto}.two-factor-form{max-width:none}.two-factor-form .button,.two-factor-recovery-actions .button{width:100%}.two-factor-recovery-actions{display:grid;grid-template-columns:minmax(0,1fr)}.two-factor-settings .button{white-space:normal}}
