@@ -26,10 +26,7 @@ def test_donate_page_contains_donor_wall(client):
     assert '<meta property="og:title" content="ZKS95 Developer Donate">' in body
     assert "apple-touch-icon.png" in body
     assert "visual-effect-none" in body
-    assert "Золотарев Кирилл Сергеевич" in body
-    assert "182501591471" in body
     assert '<footer' not in body
-    assert 'href="/requisites"' in body
     assert "не является покупкой товара" in body
 
 def test_recipient_and_services_are_public(client):

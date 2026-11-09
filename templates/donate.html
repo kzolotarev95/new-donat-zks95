@@ -18,7 +18,6 @@
     <label>Никнейм <span class="optional">обязательно</span><input type="text" name="nickname" maxlength="64" minlength="2" placeholder="например, zks95" required></label>
     <label>Сообщение <span class="optional">необязательно</span><textarea name="message" rows="3" maxlength="500" placeholder="Пара слов разработчику"></textarea></label>
 
-    {% include "_support_recipient.html" %}
     <button class="button pay-button" type="submit" aria-describedby="donation-purpose">
       <span class="pay-sbp-mark" aria-hidden="true"><img src="{{ url_for('static', filename='img/sbp-logo.svg') }}" width="26" height="30" alt=""><span>СБП</span></span>
       <span class="pay-label">Перейти к оплате</span>
