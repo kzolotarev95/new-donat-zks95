@@ -19,7 +19,11 @@
     <label>Сообщение <span class="optional">необязательно</span><textarea name="message" rows="3" maxlength="500" placeholder="Пара слов разработчику"></textarea></label>
 
     {% include "_support_recipient.html" %}
-    <button class="button button-gold button-full pay-button" type="submit" aria-describedby="donation-purpose"><span class="pay-icon">↗</span><span>Перейти к оплате</span><span class="pay-arrow">→</span></button>
+    <button class="button pay-button" type="submit" aria-describedby="donation-purpose">
+      <span class="pay-sbp-mark" aria-hidden="true"><img src="{{ url_for('static', filename='img/sbp-logo.svg') }}" width="26" height="30" alt=""><span>СБП</span></span>
+      <span class="pay-label">Перейти к оплате</span>
+      <svg class="pay-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
     <small class="donation-purpose" id="donation-purpose">Добровольная поддержка не является покупкой товара и не предусматривает оказания конкретной услуги. Заказать работу можно на странице <a href="{{ url_for('site.services') }}">«Услуги»</a>.</small>
     <div class="form-status" role="status" aria-live="polite"></div>
     <small class="form-legal">Нажимая кнопку, вы соглашаетесь с обработкой данных для проведения платежа.</small>
