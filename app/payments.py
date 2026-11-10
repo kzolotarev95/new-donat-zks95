@@ -38,6 +38,9 @@ def create_payment(amount, description, return_url, metadata=None):
     payload = {
         "amount": {"value": f"{amount:.2f}", "currency": current_app.config["PAYMENT_CURRENCY"]},
         "capture": True,
+        # Ask YooKassa to open the SBP flow directly instead of its generic
+        # payment-method chooser. The API accepts this as payment_method_data.
+        "payment_method_data": {"type": "sbp"},
         "confirmation": {"type": "redirect", "return_url": return_url},
         "description": description[:128],
         "metadata": metadata or {},

@@ -15,6 +15,7 @@ from app.db import get_db
 from app.payment_limits import (donation_amount_options, get_payment_limits,
                                 save_payment_limits, validate_limits)
 from app.settings import set_runtime_setting
+from app.payments import create_payment
 
 
 class DonationFields(HTMLParser):
@@ -185,3 +186,23 @@ def test_fixed_amount_range_accepts_only_that_amount(app, client, gateway):
     assert client.post("/api/payments", json={"amount": "10"}).status_code == 200
     assert client.post("/api/payments", json={"amount": "9"}).status_code == 400
     assert client.post("/api/payments", json={"amount": "11"}).status_code == 400
+
+
+def test_yookassa_payment_is_created_with_sbp_method(app, monkeypatch):
+    captured = {}
+
+    class FakePayment:
+        @staticmethod
+        def create(payload, idempotency_key):
+            captured["payload"] = payload
+            captured["idempotency_key"] = idempotency_key
+            return object()
+
+    with app.app_context():
+        monkeypatch.setattr("app.payments._sdk", lambda: FakePayment)
+        result, idempotency_key = create_payment(Decimal("500"), "Test donation", "https://example.test/success")
+
+    assert result is not None
+    assert idempotency_key == captured["idempotency_key"]
+    assert captured["payload"]["payment_method_data"] == {"type": "sbp"}
+    assert captured["payload"]["confirmation"]["type"] == "redirect"
