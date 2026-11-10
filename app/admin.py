@@ -153,6 +153,12 @@ def logout():
     return redirect(url_for("admin.login"))
 
 
+@admin_bp.get("")
+def entry():
+    # Keep the current origin, including a reserve port, and avoid cached 308s.
+    return redirect(url_for("admin.dashboard"), code=302)
+
+
 @admin_bp.get("/")
 @admin_required
 def dashboard():
