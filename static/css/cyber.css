@@ -16,13 +16,14 @@ body.theme-cyber {
   color: var(--text);
   color-scheme: dark;
   background: #020713;
+  position: relative;
   isolation: isolate;
 }
 .theme-cyber [hidden] { display: none !important; }
 .theme-cyber .shell, .theme-cyber .site-header { width: min(var(--max), calc(100% - 64px)); }
 .theme-cyber::before, .theme-cyber::after { content: ''; position: absolute; inset: 0; pointer-events: none; z-index: -2; }
-.theme-cyber::before { background: url('../img/cyber-scene-top.svg') center top / max(100%, 1536px) 568px no-repeat; }
-.theme-cyber::after { background: url('../img/cyber-scene-bottom.svg') center bottom / max(100%, 1536px) 640px no-repeat; }
+.theme-cyber::before { background: url('../img/cyber-scene-top.svg?v=2') center top / 100% 568px no-repeat; }
+.theme-cyber::after { background: url('../img/cyber-scene-bottom.svg?v=2') center bottom / 100% 640px no-repeat; }
 .theme-cyber .grain { opacity: .012; }
 .theme-cyber svg { flex-shrink: 0; vertical-align: middle; }
 .theme-cyber a, .theme-cyber button, .theme-cyber input, .theme-cyber textarea { -webkit-tap-highlight-color: transparent; }
@@ -135,7 +136,7 @@ body.theme-cyber {
 .theme-cyber .cyber-supporters .donor-more-actions { display: none; }
 .theme-cyber .cyber-supporters .empty-state { grid-column: 1 / -1; }
 
-/* Feature strip and quiet footer. */
+/* Feature strip. */
 .theme-cyber .cyber-features { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 17px; padding-bottom: 0; }
 .cyber-feature { display: flex; gap: 20px; align-items: flex-start; min-width: 0; min-height: 93px; padding: 18px 19px; border: 1px solid #2c699880; border-radius: 16px; background: linear-gradient(120deg, #07132bd9, #101a35bb); }
 .cyber-feature:nth-child(2) { border-color: #4c678466; }.cyber-feature:nth-child(3) { border-color: #71478a80; background: linear-gradient(120deg, #130d24d9, #101326b3); }.cyber-feature:nth-child(4) { border-color: #58509288; }
@@ -143,14 +144,6 @@ body.theme-cyber {
 .cyber-feature:first-child svg { fill: #2863eb; stroke: #329cff; }.cyber-feature:nth-child(2) .cyber-feature-icon { color: #08d874; }.cyber-feature:nth-child(2) svg { fill: #09d474; stroke: #082f22; }.cyber-feature:nth-child(3) .cyber-feature-icon { color: #fd324d; }.cyber-feature:nth-child(4) .cyber-feature-icon { color: #00aaff; }
 .theme-cyber .cyber-feature h3 { margin: 1px 0 6px; font-size: 13px; font-weight: 600; letter-spacing: -.3px; line-height: 1.25; }
 .cyber-feature p { font-size: 11px; line-height: 1.55; color: #a9b2ce; margin: 0; }
-.cyber-footer { padding: 23px 0 13px; border: 0; }
-.cyber-footer-thanks { display: flex; align-items: center; justify-content: center; gap: 20px; margin: 0; font-size: 14px; color: #b0b7d1; }
-.cyber-footer-thanks::before, .cyber-footer-thanks::after { content: ''; height: 1px; width: 90px; background: linear-gradient(90deg, transparent, #6b7eaa4d); }
-.cyber-footer-thanks::after { transform: rotate(180deg); }
-.cyber-footer-thanks svg { color: #b134ff; fill: #a83bfa; }
-.cyber-footer-links { display: flex; justify-content: center; flex-wrap: wrap; gap: 7px 16px; margin-top: 16px; }
-.cyber-footer-links a { font-size: 9px; color: #697394; text-decoration: none; }
-.cyber-footer-links a:hover { color: #d2b0ff; }
 .theme-cyber [data-cyber-reveal] { transition: opacity .5s, transform .5s; }
 .theme-cyber .cyber-reveal-ready.is-visible { animation: cyber-reveal .55s ease-out; }
 .theme-cyber.cyber-calm::before, .theme-cyber.cyber-calm::after { opacity: .4; }
@@ -208,7 +201,6 @@ body.theme-cyber {
   .theme-cyber .cyber-supporters { padding: 15px 0 22px; }.theme-cyber .cyber-section-head { flex-direction: column; align-items: center; text-align: center; gap: 16px; margin-bottom: 17px; }.theme-cyber .cyber-section-head .eyebrow { justify-content: center; font-size: 12px; gap: 7px; }.theme-cyber .cyber-supporters h2 { font-size: clamp(21px, 5.7vw, 30px) !important; letter-spacing: -.7px; line-height: 1.16; }.cyber-heading-heart svg { width: 16px; height: 16px; }.cyber-all-donors { min-height: 40px; font-size: 11px; }
   .theme-cyber .cyber-supporters .donor-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }.theme-cyber .cyber-supporters .donor-card { min-height: 65px; gap: 8px; padding: 8px; border-radius: 11px; }.cyber-donor-avatar { width: 30px; height: 30px; font-size: 16px; }.cyber-donor-crown { left: 4px; }.cyber-donor-crown svg { width: 17px; height: 17px; }.theme-cyber .cyber-donor-copy .donor-name { font-size: 11px; }.cyber-donor-details { font-size: 9px; gap: 2px; }.cyber-donor-details time { font-size: 8px; }.cyber-donor-heart svg { width: 13px; height: 13px; }.cyber-donor-note { font-size: 8px; }
   .theme-cyber .cyber-features { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }.cyber-feature { gap: 9px; min-height: 108px; padding: 16px 10px; border-radius: 12px; }.cyber-feature-icon { width: 25px; }.cyber-feature-icon svg { width: 25px; height: 25px; }.theme-cyber .cyber-feature h3 { font-size: 11px; line-height: 1.35; margin: 0 0 5px; }.cyber-feature p { font-size: 10px; line-height: 1.5; }
-  .cyber-footer { padding-top: 25px; }.cyber-footer-thanks { gap: 10px; font-size: 12px; }.cyber-footer-thanks::before, .cyber-footer-thanks::after { width: 30px; }.cyber-footer-links { gap: 8px 12px; }.cyber-footer-links a { font-size: 9px; }
 }
 @media (max-width: 360px) {
   .theme-cyber .shell, .theme-cyber .site-header { width: calc(100% - 28px); }.theme-cyber .site-header { gap: 8px; }.theme-cyber .brand { font-size: 16px; gap: 8px; }.theme-cyber .brand-mark { width: 32px; height: 32px; font-size: 20px; }.cyber-header-donate { padding-inline: 8px; font-size: 10px; }.cyber-header-donate svg { width: 12px; }

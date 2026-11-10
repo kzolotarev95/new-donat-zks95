@@ -4,9 +4,6 @@
   <button class="menu-toggle" aria-label="Открыть меню" aria-expanded="false" aria-controls="cyber-navigation"><span></span><span></span></button>
   <nav class="nav-links" id="cyber-navigation" aria-label="Основная навигация">
     <a href="{{ url_for('site.donate') }}" {% if request.endpoint == 'site.donate' %}aria-current="page"{% endif %}>{{ icon('home',16) }} Главная</a>
-    <a href="{{ url_for('site.donate', _anchor='features') }}">Возможности</a>
-    <a href="{{ url_for('site.donate', _anchor='donate-form') }}">Поддержка</a>
-    <a href="{{ url_for('site.contact') }}" {% if request.endpoint == 'site.contact' %}aria-current="page"{% endif %}>Контакты</a>
   </nav>
   <div class="cyber-header-actions">
     <button type="button" class="cyber-ambient-toggle" aria-label="Уменьшить свечение и анимацию" title="Уменьшить свечение и анимацию" aria-pressed="false">{{ icon('sun',14) }}{{ icon('moon',13) }}</button>
