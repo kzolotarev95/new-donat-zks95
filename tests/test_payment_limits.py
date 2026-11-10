@@ -206,3 +206,4 @@ def test_yookassa_payment_is_created_with_sbp_method(app, monkeypatch):
     assert idempotency_key == captured["idempotency_key"]
     assert captured["payload"]["payment_method_data"] == {"type": "sbp"}
     assert captured["payload"]["confirmation"]["type"] == "redirect"
+    assert "payment_ref=" in captured["payload"]["confirmation"]["return_url"]

@@ -1,6 +1,7 @@
 """YooKassa integration isolated from HTTP routes."""
 import uuid
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
+from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 from .settings import get_runtime_setting
 from .payment_limits import get_payment_limits
 
@@ -35,13 +36,19 @@ def create_payment(amount, description, return_url, metadata=None):
     from flask import current_app
     payment_idempotency = str(uuid.uuid4())
     Payment = _sdk()
+    # The return URL is also used when checkout is cancelled. Keep a unique
+    # server-side reference so the result page can identify this payment.
+    return_parts = urlsplit(return_url)
+    return_query = dict(parse_qsl(return_parts.query, keep_blank_values=True))
+    return_query["payment_ref"] = payment_idempotency
+    tracked_return_url = urlunsplit(return_parts._replace(query=urlencode(return_query)))
     payload = {
         "amount": {"value": f"{amount:.2f}", "currency": current_app.config["PAYMENT_CURRENCY"]},
         "capture": True,
         # Ask YooKassa to open the SBP flow directly instead of its generic
         # payment-method chooser. The API accepts this as payment_method_data.
         "payment_method_data": {"type": "sbp"},
-        "confirmation": {"type": "redirect", "return_url": return_url},
+        "confirmation": {"type": "redirect", "return_url": tracked_return_url},
         "description": description[:128],
         "metadata": metadata or {},
     }

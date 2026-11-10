@@ -1,1 +1,19 @@
-{% extends "base.html" %}{% block title %}Спасибо — ZKS95 Developer{% endblock %}{% block content %}<section class="success-page shell"><div class="success-icon">✓</div><p class="eyebrow">Payment received</p><h1>Спасибо за<br><em>поддержку!</em></h1><p>Ваш вклад уже помогает следующему релизу стать ближе.</p><a class="button button-gold" href="{{ url_for('site.index') }}">Вернуться на главную <span>↗</span></a></section>{% endblock %}
+{% extends "base.html" %}
+{% block title %}{% if payment_completed %}Спасибо — ZKS95 Developer{% else %}Оплата не завершена — ZKS95 Developer{% endif %}{% endblock %}
+{% block content %}
+<section class="success-page shell">
+  {% if payment_completed %}
+  <div class="success-icon">✓</div>
+  <p class="eyebrow">Payment received</p>
+  <h1>Спасибо за<br><em>поддержку!</em></h1>
+  <p>Ваш вклад уже помогает следующему релизу стать ближе.</p>
+  <a class="button button-gold" href="{{ url_for('site.index') }}">Вернуться на главную <span>↗</span></a>
+  {% else %}
+  <div class="success-icon is-failed">×</div>
+  <p class="eyebrow">Оплата не подтверждена</p>
+  <h1>Оплата не<br><em>завершена.</em></h1>
+  <p>Платёж не подтверждён. Если вы уже оплатили, дождитесь подтверждения и обновите страницу. Иначе вернитесь к форме и попробуйте ещё раз.</p>
+  <a class="button button-gold" href="{{ url_for('site.donate') }}">Попробовать снова <span>↗</span></a>
+  {% endif %}
+</section>
+{% endblock %}

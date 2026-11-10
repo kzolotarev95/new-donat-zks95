@@ -7,7 +7,9 @@ import logging
 import secrets
 from urllib.parse import urljoin
 from flask import Blueprint, Response, current_app, jsonify, redirect, render_template, request, url_for
-from .db import create_payment_record, donor_color, get_donor, get_payment, list_donors, record_donor_payment, update_payment
+from .db import (create_payment_record, donor_color, get_donor, get_payment,
+                 get_payment_by_idempotency_key, list_donors,
+                 record_donor_payment, update_payment)
 from .github import fetch_repositories
 from .payments import create_payment, fetch_payment, normalize_amount
 from .payment_limits import DEFAULT_LIMITS, InvalidPaymentLimits, donation_amount_options, get_payment_limits
@@ -145,9 +147,39 @@ def payments_api():
 
 @bp.get("/payment/success")
 def payment_success():
-    payment_id = request.args.get("payment_id")
+    payment_id = (request.args.get("payment_id") or "").strip()
+    payment_ref = (request.args.get("payment_ref") or "").strip()
     payment = get_payment(payment_id) if payment_id else None
-    return render_template("payment_success.html", payment=payment)
+    if payment is None and payment_ref:
+        payment = get_payment_by_idempotency_key(payment_ref)
+    payment_completed = bool(payment and payment["status"] == "succeeded")
+
+    # A cancelled checkout can use the same return URL. Only a confirmed
+    # succeeded status may render the gratitude page. Settlement stays in the
+    # webhook: returning here must never duplicate donor totals or push alerts.
+    if payment is not None and payment["status"] in {"pending", "waiting_for_capture"}:
+        try:
+            confirmed = fetch_payment(payment["payment_id"])
+            confirmed_amount = getattr(confirmed, "amount", None)
+            payment_completed = (
+                confirmed.id == payment["payment_id"]
+                and confirmed_amount is not None
+                and str(confirmed_amount.value) == str(payment["amount"])
+                and confirmed_amount.currency == payment["currency"]
+                and confirmed.status == "succeeded"
+            )
+            if confirmed.status != "succeeded" and confirmed.id == payment["payment_id"]:
+                update_payment(payment["payment_id"], confirmed.status, json.loads(confirmed.json()))
+        except Exception:
+            log.exception("Could not refresh payment on return")
+
+    response = current_app.make_response(render_template(
+        "payment_success.html",
+        payment_completed=payment_completed,
+    ))
+    response.headers["Cache-Control"] = "no-store, private"
+    response.headers["Referrer-Policy"] = "no-referrer"
+    return response
 
 
 def _verify_webhook_payload(payload):

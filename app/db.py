@@ -192,6 +192,12 @@ def get_payment(payment_id):
     return get_db().execute("SELECT * FROM payments WHERE payment_id = ?", (payment_id,)).fetchone()
 
 
+def get_payment_by_idempotency_key(idempotency_key):
+    return get_db().execute(
+        "SELECT * FROM payments WHERE idempotency_key = ?", (idempotency_key,)
+    ).fetchone()
+
+
 def update_payment(payment_id, status, payload=None, paid=False):
     db = get_db()
     now = _now()
