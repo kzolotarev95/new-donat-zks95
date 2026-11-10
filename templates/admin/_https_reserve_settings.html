@@ -1,0 +1,21 @@
+<section class="settings-section https-reserve-settings" id="https-reserve" data-status-url="{{ url_for('admin.https_reserve_status') }}">
+  <h2>Резервный HTTPS-порт для VPS</h2>
+  <p class="muted">Открывает тот же сайт и админку на порту 8443 с действующим сертификатом. Основной порт 443 продолжает работать.</p>
+  <form method="post" action="{{ url_for('admin.https_reserve_save') }}" class="https-reserve-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label class="https-reserve-toggle"><input type="checkbox" name="enabled" value="1" {% if https_reserve.desired_enabled %}checked{% endif %}><span>Включить резервный HTTPS-порт <strong>8443</strong></span></label>
+    <button class="button button-gold" type="submit">Применить порт</button>
+  </form>
+  <p class="https-reserve-status" data-state="{{ https_reserve.state }}" role="status" aria-live="polite">{{ https_reserve.message }}</p>
+  <div class="https-reserve-links" {% if not https_reserve.enabled or not https_reserve.site_url %}hidden{% endif %}>
+    <a class="https-reserve-site" href="{{ https_reserve.site_url }}" target="_blank" rel="noopener noreferrer">Открыть сайт на 8443 ↗</a>
+    <a class="https-reserve-admin" href="{{ https_reserve.admin_url }}" target="_blank" rel="noopener noreferrer">Открыть админку ↗</a>
+    <code class="https-reserve-address">{{ https_reserve.site_url }}</code>
+  </div>
+  <details class="https-reserve-help"><summary>Домен, платежи и доступ к порту</summary>
+    <p class="muted">Резерв использует домен и сертификат действующего сайта в Nginx. После переноса домена и настройки HTTPS ссылки обновятся автоматически. Изменение поля «Домен сайта» само по себе не переносит DNS и сертификат.</p>
+    <p class="muted">Порт TCP 8443 должен быть разрешён в firewall VPS и панели провайдера. Служба проверяет HTTPS локально; доступ из интернета проверяйте по ссылке выше.</p>
+    <p class="muted">Если используете 8443 для донатов, укажите его в URL возврата в настройках YooKassa и в адресе HTTP-уведомлений в кабинете ЮKassa. Ярлык iOS и push подключаются отдельно на адресе с портом.</p>
+    <p class="muted">Отключение порта закроет адрес с :8443. Изменения сохраняются после перезагрузки и обновления сайта.</p>
+  </details>
+</section>

@@ -8,6 +8,7 @@ def app(tmp_path):
         "APP_ENV": "testing",
         "SECRET_KEY": "test",
         "DATABASE_PATH": str(tmp_path / "site.db"),
+        "HTTPS_RESERVE_STATUS_PATH": str(tmp_path / "https-reserve-status.json"),
         "YOOKASSA_SHOP_ID": "",
         "YOOKASSA_SECRET_KEY": "",
         "ADMIN_USERNAME": "admin",

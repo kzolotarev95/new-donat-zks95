@@ -23,6 +23,7 @@ from .settings import get_runtime_setting, set_runtime_setting
 from .visual import VISUAL_EFFECTS, VISUAL_SPEEDS, normalize_visual_effect, normalize_visual_speed
 from .captcha import site_key as recaptcha_site_key, verify as verify_recaptcha
 from .backup import export_backup, import_backup
+from .https_reserve import SETTING as HTTPS_RESERVE_SETTING, reserve_status
 
 log = logging.getLogger(__name__)
 admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
@@ -514,9 +515,28 @@ def settings():
             values[key] = "" if secret else value
     user = get_admin_user_by_id(session["admin_user_id"])
     return render_template("admin/settings.html", sections=sections, values=values,
+                           https_reserve=reserve_status(),
                            two_factor_enabled=bool(user["totp_secret"]),
                            setup_secret=two_factor.pending_setup(user),
                            recovery_count=two_factor.recovery_count(user))
+
+
+@admin_bp.post("/settings/https-reserve")
+@admin_required
+def https_reserve_save():
+    value = request.form.get("enabled", "0")
+    if value not in {"0", "1"}:
+        abort(400, description="Допускается только включение или отключение порта 8443.")
+    set_runtime_setting(HTTPS_RESERVE_SETTING, value)
+    log.info("Admin requested HTTPS reserve enabled=%s user_id=%s", value, session["admin_user_id"])
+    flash("Настройка порта сохранена. Системная служба применит её в течение 15 секунд.", "success")
+    return redirect(url_for("admin.settings", _anchor="https-reserve"))
+
+
+@admin_bp.get("/api/https-reserve")
+@admin_required
+def https_reserve_status():
+    return jsonify(reserve_status())
 
 
 def _confirm_security_password(user):

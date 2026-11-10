@@ -17,6 +17,11 @@ SITE_DOMAIN=""
 if [[ -r "${ETC_DIR}/.env" ]]; then SITE_DOMAIN="$(awk -F= '/^SITE_DOMAIN=/{print substr($0,index($0,$2)); exit}' "${ETC_DIR}/.env" || true)"; fi
 systemctl disable --now "${APP_NAME}-health.timer" "${APP_NAME}-health.service" 2>/dev/null || true
 systemctl disable --now "${APP_NAME}-login-push.timer" "${APP_NAME}-login-push.service" 2>/dev/null || true
+systemctl disable --now "${APP_NAME}-https-reserve.timer" "${APP_NAME}-https-reserve.service" 2>/dev/null || true
+rm -f "/etc/systemd/system/${APP_NAME}-https-reserve.service" "/etc/systemd/system/${APP_NAME}-https-reserve.timer"
+rm -f "/usr/local/libexec/${APP_NAME}/reconcile_https_reserve.py"
+rmdir "/usr/local/libexec/${APP_NAME}" 2>/dev/null || true
+rm -rf "/var/lib/${APP_NAME}-network"
 systemctl disable --now "${SERVICE_NAME}" 2>/dev/null || true; systemctl disable --now "${ALERT_SERVICE_NAME}" 2>/dev/null || true
 rm -f "/etc/systemd/system/${SERVICE_NAME}" "/etc/systemd/system/${ALERT_SERVICE_NAME}" "/etc/systemd/system/${APP_NAME}-health.service" "/etc/systemd/system/${APP_NAME}-health.timer" "/etc/systemd/system/${APP_NAME}-login-push.service" "/etc/systemd/system/${APP_NAME}-login-push.timer"
 systemctl daemon-reload

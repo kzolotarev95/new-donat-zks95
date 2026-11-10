@@ -43,6 +43,8 @@ with app.app_context():
 print("database ready")
 PY
   cmp -s "${APP_DIR}/config/systemd/${SERVICE_NAME}" "/etc/systemd/system/${SERVICE_NAME}" || SERVICE_CHANGED=1
+  install -d -o root -g root -m 0755 "/usr/local/libexec/${APP_NAME}" || return
+  install -o root -g root -m 0755 "${APP_DIR}/scripts/reconcile_https_reserve.py" "/usr/local/libexec/${APP_NAME}/reconcile_https_reserve.py" || return
   for UNIT_FILE in "${APP_DIR}"/config/systemd/*.service "${APP_DIR}"/config/systemd/*.timer; do
     [[ -f "${UNIT_FILE}" ]] || continue
     install -m 0644 "${UNIT_FILE}" "/etc/systemd/system/$(basename "${UNIT_FILE}")" || return
@@ -78,4 +80,5 @@ fi
 if [[ -f "${APP_DIR}/config/systemd/${APP_NAME}-login-push.timer" ]]; then
   systemctl enable --now "${APP_NAME}-login-push.timer"
 fi
+systemctl enable --now "${APP_NAME}-https-reserve.timer"
 log "Готово. Сервис слушает 127.0.0.1:${APP_PORT}; бэкап: ${BACKUP}"

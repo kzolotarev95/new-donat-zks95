@@ -18,7 +18,7 @@
       </label>
       {% endfor %}
     </section>
-    {% if section_title == 'Google reCAPTCHA' %}{% include "admin/_two_factor_settings.html" %}{% endif %}
+    {% if section_title == 'Google reCAPTCHA' %}{% include "admin/_two_factor_settings.html" %}{% include "admin/_https_reserve_settings.html" %}{% endif %}
     {% endfor %}
   </div>
   <div class="settings-note">Эффект и скорость применяются ко всем страницам сайта сразу после сохранения. Секретные значения хранятся в SQLite в зашифрованном виде и не показываются обратно.</div>
@@ -26,3 +26,4 @@
 </div>
 {% include "admin/_backup_sections.html" %}
 {% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='js/https-reserve.js') }}" defer></script>{% endblock %}

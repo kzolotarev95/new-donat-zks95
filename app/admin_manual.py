@@ -34,6 +34,8 @@ COMMAND_GROUPS = [
         ("Включить таймер отправки", "Включает проверку очереди примерно раз в минуту. В панели также должны быть включены push и оповещения о входах.", "sudo systemctl enable --now new-donat-zks95-login-push.timer"),
     ]),
     ("VPS и HTTPS", [
+        ("Резервный HTTPS-порт", "Таймер применяет включение 8443 из настроек админки. Доступ к Интернету зависит также от firewall и сети провайдера.", "sudo systemctl status new-donat-zks95-https-reserve.timer --no-pager\nsudo cat /var/lib/new-donat-zks95-network/status.json"),
+        ("Журнал резервного порта", "Показывает ошибки сертификата, занятого порта, проверки Nginx и применения настроек.", "sudo journalctl -u new-donat-zks95-https-reserve.service -n 50 --no-pager"),
         ("Диск и память", "Проверяет свободное место и память VPS.", "df -h\nfree -h"),
         ("Открытые порты", "Процессы, слушающие TCP-порты: Nginx, backend и другие сервисы.", "sudo ss -lntp"),
         ("Сертификаты HTTPS", "Если установлен Certbot: покажет сертификаты и сроки их действия.", "sudo certbot certificates"),

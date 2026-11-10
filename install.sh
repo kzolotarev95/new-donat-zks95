@@ -81,6 +81,8 @@ if [[ "${ADMIN_COUNT}" == "0" ]]; then
   runuser -u "${APP_USER}" -- env PYTHONPATH="${APP_DIR}" DATABASE_PATH="${DB_PATH}" "${APP_DIR}/.venv/bin/python" "${APP_DIR}/scripts/create_admin.py"
 fi
 log "Устанавливаю systemd service"
+install -d -o root -g root -m 0755 "/usr/local/libexec/${APP_NAME}"
+install -o root -g root -m 0755 "${APP_DIR}/scripts/reconcile_https_reserve.py" "/usr/local/libexec/${APP_NAME}/reconcile_https_reserve.py"
 for UNIT_FILE in "${APP_DIR}"/config/systemd/*.service "${APP_DIR}"/config/systemd/*.timer; do
   [[ -f "${UNIT_FILE}" ]] || continue
   install -m 0644 "${UNIT_FILE}" "/etc/systemd/system/$(basename "${UNIT_FILE}")"
@@ -129,6 +131,7 @@ log "Проверяю запуск приложения и health check"; HEALTH
 for _ in {1..20}; do if curl --fail --silent --show-error "http://127.0.0.1:${APP_PORT}/healthz" >/dev/null; then HEALTH_OK=1; break; fi; sleep 1; done
 if [[ "${HEALTH_OK}" -ne 1 ]]; then systemctl status "${SERVICE_NAME}" --no-pager || true; journalctl -u "${SERVICE_NAME}" -n 50 --no-pager || true; fatal "Приложение не ответило на health check."; fi
 ss -lnt | grep -q ":${APP_PORT}[[:space:]]" || fatal "Порт ${APP_PORT} не слушается."; systemctl is-enabled "${SERVICE_NAME}" >/dev/null || fatal "Сервис не включён в автозапуск."
+systemctl enable --now "${APP_NAME}-https-reserve.timer"
 cat <<EOF
 
 Установка завершена.

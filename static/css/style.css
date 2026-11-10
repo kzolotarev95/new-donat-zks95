@@ -212,6 +212,21 @@ h2{font-size:clamp(1.55rem,3vw,2.45rem)!important;line-height:1.12;letter-spacin
 .two-factor-qr{display:block;max-width:100%;height:auto;aspect-ratio:1;background:#fff;border-radius:8px}
 .two-factor-secret{display:block;margin:12px 0;padding:12px;border:1px solid var(--line);border-radius:4px;background:var(--bg);font:400 .78rem monospace;overflow-wrap:anywhere;user-select:all}
 .two-factor-cancel{margin-top:12px}
+.https-reserve-form{display:grid;gap:14px;margin-top:16px}
+.settings-section .https-reserve-toggle{display:flex;align-items:center;gap:10px;margin:0;cursor:pointer;line-height:1.5}
+.https-reserve-toggle input[type=checkbox]{flex:0 0 18px;width:18px;height:18px;min-height:0;margin:0;padding:0;accent-color:var(--gold)}
+.https-reserve-form .button{justify-self:start}
+.https-reserve-status{margin:16px 0 0;padding:11px 13px;border:1px solid var(--line);border-radius:5px;color:var(--muted);font-size:.75rem;line-height:1.6;overflow-wrap:anywhere}
+.https-reserve-status[data-state=enabled]{border-color:rgba(40,190,115,.35);color:#70dca4}
+.https-reserve-status[data-state=error],.https-reserve-status[data-state=unavailable]{border-color:rgba(225,6,32,.4);color:#ff8a97}
+.https-reserve-links{display:flex;flex-wrap:wrap;gap:10px 18px;margin-top:14px;font-size:.76rem}
+.https-reserve-links[hidden]{display:none}
+.https-reserve-links a{color:var(--gold);text-underline-offset:3px}
+.https-reserve-address{flex-basis:100%;overflow-wrap:anywhere;font-size:.7rem;color:var(--muted)}
+.https-reserve-help{margin-top:16px;font-size:.75rem;line-height:1.7}
+.https-reserve-help summary{cursor:pointer;font-weight:700}
+.https-reserve-help p{margin-top:12px}
+@media(max-width:760px){.https-reserve-form .button{width:100%}.https-reserve-links{flex-direction:column;gap:12px}.https-reserve-toggle{font-size:.76rem}}
 .two-factor-settings .button-ghost,.two-factor-back .button-ghost,.two-factor-recovery .button-ghost{color:var(--gold);background:rgba(225,6,32,.07);border-color:rgba(225,6,32,.45)}
 .two-factor-error{margin:0 0 14px;padding:10px;border:1px solid rgba(225,6,32,.4);border-radius:4px;color:#ff8a97;font-size:.72rem;line-height:1.5;text-align:center}
 .two-factor-login>.muted{margin-bottom:20px;text-align:center;line-height:1.6}
