@@ -32,10 +32,10 @@ body.theme-cyber {
 .theme-cyber #donate-form, .theme-cyber #features, .theme-cyber #supporters { scroll-margin-top: 85px; }
 .theme-cyber .page-hero h1 { overflow-wrap: anywhere; }
 
-/* Header: the same 64 px rhythm and centred navigation as the supplied image. */
+/* Compact header with the brand and payment action. */
 .theme-cyber .site-header {
   position: sticky; top: 0; z-index: 50; height: 64px; margin: auto;
-  display: grid; grid-template-columns: 220px 1fr 170px; align-items: center;
+  display: grid; grid-template-columns: 1fr auto; align-items: center;
   border-bottom: 1px solid #6374ad18; background: #020713b8;
   backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
   transition: box-shadow .25s, background .25s;
@@ -138,7 +138,7 @@ body.theme-cyber {
 .theme-cyber .cyber-supporters .empty-state { grid-column: 1 / -1; }
 
 /* Feature strip. */
-.theme-cyber .cyber-features { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 17px; padding-bottom: 0; }
+.theme-cyber .cyber-features { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 17px; padding-bottom: clamp(32px, 4vw, 64px); }
 .cyber-feature { display: flex; gap: 20px; align-items: flex-start; min-width: 0; min-height: 93px; padding: 18px 19px; border: 1px solid #2c699880; border-radius: 16px; background: linear-gradient(120deg, #07132bd9, #101a35bb); }
 .cyber-feature:nth-child(2) { border-color: #4c678466; }.cyber-feature:nth-child(3) { border-color: #71478a80; background: linear-gradient(120deg, #130d24d9, #101326b3); }.cyber-feature:nth-child(4) { border-color: #58509288; }
 .cyber-feature-icon { color: #198bff; display: block; flex-shrink: 0; width: 48px; text-align: center; filter: drop-shadow(0 0 7px #0633b030); }
@@ -160,7 +160,6 @@ body.theme-cyber {
   .cyber-art { left: 430px; width: 475px; top: 35px; }
 }
 @media (max-width: 1190px) and (min-width: 761px) {
-  .theme-cyber .site-header { grid-template-columns: 190px 1fr 145px; }
   .theme-cyber .nav-links { gap: 22px; }
   .cyber-header-actions { gap: 9px; }
   .theme-cyber .cyber-hero { grid-template-columns: minmax(0, 1fr) 330px; gap: 25px; min-height: 470px; }
@@ -173,7 +172,6 @@ body.theme-cyber {
   .theme-cyber .cyber-features { gap: 12px; }.cyber-feature { gap: 10px; padding: 16px 12px; }.cyber-feature-icon { width: 35px; }.cyber-feature h3 { font-size: 12px !important; }.cyber-feature p { font-size: 10px; }
 }
 @media (max-width: 950px) and (min-width: 761px) {
-  .theme-cyber .site-header { grid-template-columns: 170px 1fr 88px; }
   .theme-cyber .nav-links { gap: 18px; }.theme-cyber .nav-links a { font-size: 11px; }.cyber-ambient-toggle { display: none; }.cyber-header-donate { padding-inline: 12px; }
   .cyber-intro { max-width: 100%; }.cyber-lead { font-size: 13px; }
   .cyber-benefits { grid-template-columns: 1fr 1fr; gap: 12px; }.cyber-benefits li { flex-direction: row; align-items: center; font-size: 10px; }.cyber-benefits li>span:first-child { width: 35px; height: 35px; }.cyber-benefits li svg { width: 22px; }
@@ -184,7 +182,7 @@ body.theme-cyber {
   body.theme-cyber { --cyber-heading-size: clamp(21px, 5.7vw, 30px); }
   .theme-cyber .shell, .theme-cyber .site-header { width: calc(100% - 36px); }
   .theme-cyber::before { background-size: auto 630px; opacity: .7; }.theme-cyber::after { opacity: .7; }
-  .theme-cyber .site-header { height: 64px; grid-template-columns: 1fr auto 36px; gap: 12px; }
+  .theme-cyber .site-header { height: 64px; gap: 12px; }
   .theme-cyber .brand { font-size: 15px; gap: 8px; letter-spacing: -.4px; }.theme-cyber .brand-mark { width: 28px; height: 28px; font-size: 18px; }
   .cyber-header-actions { grid-column: 2; grid-row: 1; }.cyber-ambient-toggle { display: none; }.cyber-header-donate { min-height: 33px; padding: 0 10px; font-size: 11px; border-radius: 9px; }
   .theme-cyber .menu-toggle { grid-column: 3; grid-row: 1; display: flex; align-items: center; justify-content: center; gap: 5px; width: 36px; height: 36px; border: 1px solid #71639b38; border-radius: 9px; }.theme-cyber .menu-toggle span { width: 18px; background: #d0c5ed; }
