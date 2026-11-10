@@ -44,6 +44,13 @@ document.addEventListener('DOMContentLoaded', () => {
     showAllDonors.addEventListener('click', event => {
       event.preventDefault();
       const extraDonors = document.querySelectorAll('#donor-list [data-extra-donor]');
+      if (showAllDonors.hasAttribute('data-donor-toggle')) {
+        const expanded = showAllDonors.getAttribute('aria-expanded') !== 'true';
+        extraDonors.forEach(card => { card.hidden = !expanded; });
+        showAllDonors.setAttribute('aria-expanded', String(expanded));
+        showAllDonors.querySelector('[data-donor-toggle-label]').textContent = expanded ? 'Свернуть список' : 'Все донатеры';
+        return;
+      }
       extraDonors.forEach(card => { card.hidden = false; });
       donorTriggers.forEach(trigger => {
         trigger.setAttribute('aria-expanded', 'true');

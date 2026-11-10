@@ -30,18 +30,17 @@
     <button class="button cyber-pay" type="submit"{% if payment_error %} disabled{% endif %}>{{ icon('send',15) }}<span>Поддержать сейчас</span>{{ icon('arrow',15) }}</button>
     <div class="cyber-secure">{{ icon('lock',11) }} Безопасные платежи</div>
     <div class="cyber-bank-logos" aria-label="Оплата через СБП в ЮKassa. Банки — участники СБП">
-      <span class="cyber-sbp-logo"><img src="{{ url_for('static', filename='img/sbp-logo.svg') }}" width="17" height="20" alt="">СБП</span>
-      {% for slug,label in [('sber','СБЕР'),('alfa','Альфа Банк'),('vtb','ВТБ'),('tbank','Т-БАНК')] %}<span class="cyber-bank-logo cyber-bank-{{ slug }}" title="{{ label }} — банк — участник СБП"><img src="{{ url_for('static', filename='img/banks/' ~ slug ~ '.webp') }}" width="16" height="16" alt="">{{ label }}</span>{% endfor %}
+      <span class="cyber-sbp-logo"><img src="{{ url_for('static', filename='img/sbp-logo.svg') }}" width="22" height="24" alt="">СБП</span>
+      {% for slug,label in [('sber','СБЕР'),('alfa','Альфа Банк'),('vtb','ВТБ'),('tbank','Т-БАНК')] %}<span class="cyber-bank-logo cyber-bank-{{ slug }}" title="{{ label }} — банк — участник СБП"><img src="{{ url_for('static', filename='img/banks/' ~ slug ~ '.webp') }}" width="20" height="20" alt="">{{ label }}</span>{% endfor %}
     </div>
     <div class="form-status" role="status" aria-live="polite">{{ payment_error or '' }}</div>
   </form>
 </section>
 <section class="donor-wall cyber-supporters shell" aria-labelledby="donors-title" id="supporters">
-  <div class="section-head cyber-section-head"><div><p class="eyebrow">{{ icon('users',23) }} Community / Supporters</p><h2 id="donors-title">Спасибо, что поддерживаете<br><em>меня и мои проекты.</em> <span class="cyber-heading-heart">{{ icon('heart',18) }}</span></h2></div>{% if donors|length > 12 %}<a class="cyber-all-donors" href="#donor-list" data-show-all-donors aria-controls="donor-list" aria-expanded="false">Все донатеры {{ icon('arrow',13) }}</a>{% endif %}</div>
+  <div class="section-head cyber-section-head"><div><p class="eyebrow">{{ icon('users',23) }} Community / Supporters</p><h2 id="donors-title">Спасибо, что поддерживаете<br><em>меня и мои проекты.</em> <span class="cyber-heading-heart">{{ icon('heart',18) }}</span></h2></div></div>
   <div class="donor-grid" id="donor-list">
     {% for donor in donors %}
     <article{% if loop.index > 12 %} hidden data-extra-donor{% endif %} class="donor-card donor-{{ donor.color }}{% if donor.pinned %} is-pinned{% endif %}" style="--donor-accent: {{ donor_color(donor.color) }}"{% if donor.pinned %} data-pinned="true"{% endif %}>
-      <span class="cyber-donor-avatar" aria-hidden="true">{{ donor.nickname[:1]|upper }}{% if donor.pinned %}<span class="cyber-donor-crown">{{ icon('crown',20) }}</span>{% endif %}</span>
       <div class="cyber-donor-copy">
         {% if donor.social_url %}<a class="donor-name" href="{{ donor.social_url }}" target="_blank" rel="noopener noreferrer nofollow">{{ donor.nickname }}</a>{% else %}<strong class="donor-name">{{ donor.nickname }}</strong>{% endif %}
         <div class="cyber-donor-details"><span>{{ '{:,.2f}'.format(donor.total_amount|float).replace(',', ' ') }} ₽</span>{% if donor.last_donated_at %}<span aria-hidden="true">·</span><time datetime="{{ donor.last_donated_at }}">{{ donor.last_donated_at[:10].split('-')|reverse|join('.') }}</time>{% endif %}</div>
@@ -51,7 +50,7 @@
     </article>
     {% else %}<div class="empty-state">Здесь появятся ваши донатеры. Спасибо за поддержку!</div>{% endfor %}
   </div>
-  {% if donors|length > 12 %}<div class="donor-more-actions"><button class="button button-ghost donor-show-all" type="button" aria-controls="donor-list" aria-expanded="false">Показать всех {{ icon('arrow',14) }}</button></div><noscript><style>.donor-grid .donor-card[hidden]{display:flex!important}.donor-more-actions{display:none}</style></noscript>{% endif %}
+  {% if donors|length > 12 %}<div class="donor-more-actions"><button class="cyber-all-donors donor-show-all" type="button" data-show-all-donors data-donor-toggle aria-controls="donor-list" aria-expanded="false"><span data-donor-toggle-label>Все донатеры</span>{{ icon('arrow',14) }}</button></div><noscript><style>.donor-grid .donor-card[hidden]{display:flex!important}.donor-more-actions{display:none!important}</style></noscript>{% endif %}
 </section>
 <section class="cyber-features shell" id="features" aria-label="Что даёт ваша поддержка">
   {% for symbol,title,description in [('rocket','Открытый код','Прозрачность и развитие сообщества'),('shield','Надёжность','Стабильная работа серверов и регулярные обновления'),('heart','Благодарность','Ваша поддержка делает проекты лучше'),('infinity','Больше возможностей','Вместе мы можем больше!')] %}
