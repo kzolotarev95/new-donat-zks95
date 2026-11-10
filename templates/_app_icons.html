@@ -1,0 +1,12 @@
+{% if site_theme == 'cyber' %}
+  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='themes/cyber/favicon.svg', v='1') }}">
+  <link rel="alternate icon" type="image/x-icon" href="{{ url_for('static', filename='themes/cyber/favicon.ico', v='1') }}">
+  <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='themes/cyber/apple-touch-icon.png', v='1') }}">
+  <link rel="manifest" href="{{ url_for('static', filename='themes/cyber/' ~ ('admin.webmanifest' if admin_app|default(false) else 'site.webmanifest'), v='1') }}">
+  <meta name="apple-mobile-web-app-title" content="ZK95DEV">
+{% else %}
+  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
+  <link rel="alternate icon" href="{{ url_for('static', filename='favicon.svg') }}">
+  <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='apple-touch-icon.png') }}">
+  <link rel="manifest" href="{{ url_for('static', filename='manifest.webmanifest') }}">
+{% endif %}

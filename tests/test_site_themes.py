@@ -1,6 +1,8 @@
 import re
 import json
+import struct
 from types import SimpleNamespace
+from urllib.parse import urljoin
 
 import pytest
 
@@ -61,6 +63,32 @@ def test_unknown_imported_theme_falls_back_to_classic(app, client):
     body = client.get('/donate').get_data(as_text=True)
     assert 'theme-classic' in body
     assert '../../anything' not in body
+
+
+def test_cyber_home_screen_icons_and_launch_destinations(app, client):
+    with app.app_context():
+        set_runtime_setting('SITE_THEME', 'cyber')
+    for page, destination, scope in (('/donate', '/donate', '/'), ('/admin/login', '/admin/', '/admin/')):
+        body = client.get(page).get_data(as_text=True)
+        manifest_url = re.search(r'rel="manifest" href="([^"]+)"', body)[1]
+        manifest = client.get(manifest_url).get_json()
+        assert manifest['id'] == manifest['start_url'] == destination
+        assert manifest['scope'] == scope
+        assert manifest['display'] == 'standalone'
+        for icon in manifest['icons']:
+            response = client.get(urljoin(manifest_url, icon['src']))
+            assert response.status_code == 200
+            assert response.data.startswith(b'\x89PNG\r\n\x1a\n')
+            assert tuple(map(int, icon['sizes'].split('x'))) == struct.unpack('>II', response.data[16:24])
+        apple_url = re.search(r'rel="apple-touch-icon" sizes="180x180" href="([^"]+)"', body)[1]
+        apple_icon = client.get(apple_url)
+        assert apple_icon.status_code == 200
+        assert struct.unpack('>II', apple_icon.data[16:24]) == (180, 180)
+        ico_url = re.search(r'rel="alternate icon" type="image/x-icon" href="([^"]+)"', body)[1]
+        ico = client.get(ico_url)
+        assert ico.status_code == 200
+        reserved, image_type, count = struct.unpack('<HHH', ico.data[:6])
+        assert reserved == 0 and image_type == 1 and count >= 3
 
 
 def test_theme_is_in_portable_backup(app):

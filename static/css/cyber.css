@@ -36,11 +36,13 @@ body.theme-cyber {
 .theme-cyber .site-header {
   position: sticky; top: 0; z-index: 50; height: 64px; margin: auto;
   display: grid; grid-template-columns: 1fr auto; align-items: center;
-  border-bottom: 1px solid #6374ad18; background: #020713b8;
-  backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+  padding-inline: 16px; border: 1px solid #9d75ef20; border-top: 0; border-radius: 0 0 16px 16px;
+  background: linear-gradient(110deg, #6526b51c, #08122530 50%, #007bc21c);
+  backdrop-filter: blur(12px) saturate(140%); -webkit-backdrop-filter: blur(12px) saturate(140%);
+  box-shadow: inset 0 -1px 0 #ac7cff09;
   transition: box-shadow .25s, background .25s;
 }
-.theme-cyber.is-scrolled .site-header { background: #030817f5; box-shadow: 0 10px 30px #0005; }
+.theme-cyber.is-scrolled .site-header { background: linear-gradient(110deg, #29114870, #0710208c 55%, #062a4270); box-shadow: 0 8px 24px #02071326, inset 0 -1px 0 #ac7cff12; }
 .theme-cyber .brand { gap: 10px; font-size: 17px; font-weight: 700; letter-spacing: -.5px; color: #fff; }
 .theme-cyber .brand-mark { width: 34px; height: 34px; border: 2px solid #a62bff; background: transparent; color: #b52eff; font-size: 21px; font-weight: 600; box-shadow: none; }
 .theme-cyber .brand-muted { color: #b225ff; font-weight: 500; }
@@ -182,7 +184,7 @@ body.theme-cyber {
   body.theme-cyber { --cyber-heading-size: clamp(21px, 5.7vw, 30px); }
   .theme-cyber .shell, .theme-cyber .site-header { width: calc(100% - 36px); }
   .theme-cyber::before { background-size: auto 630px; opacity: .7; }.theme-cyber::after { opacity: .7; }
-  .theme-cyber .site-header { height: 64px; gap: 12px; }
+  .theme-cyber .site-header { height: 64px; gap: 12px; padding-inline: 12px; }
   .theme-cyber .brand { font-size: 15px; gap: 8px; letter-spacing: -.4px; }.theme-cyber .brand-mark { width: 28px; height: 28px; font-size: 18px; }
   .cyber-header-actions { grid-column: 2; grid-row: 1; }.cyber-ambient-toggle { display: none; }.cyber-header-donate { min-height: 33px; padding: 0 10px; font-size: 11px; border-radius: 9px; }
   .theme-cyber .menu-toggle { grid-column: 3; grid-row: 1; display: flex; align-items: center; justify-content: center; gap: 5px; width: 36px; height: 36px; border: 1px solid #71639b38; border-radius: 9px; }.theme-cyber .menu-toggle span { width: 18px; background: #d0c5ed; }

@@ -8,10 +8,7 @@
   <meta property="og:title" content="{% block og_title %}{{ self.title()|striptags }}{% endblock %}">
   <meta property="og:description" content="{% block og_description %}ZKS95 Developer — инженерные продукты, open source и поддержка разработки.{% endblock %}">
   <meta property="og:type" content="website">
-  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
-  <link rel="alternate icon" href="{{ url_for('static', filename='favicon.svg') }}">
-  <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='apple-touch-icon.png') }}">
-  <link rel="manifest" href="{{ url_for('static', filename='manifest.webmanifest') }}">
+  {% include '_app_icons.html' %}
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>{% block title %}ZKS95 Developer{% endblock %}</title>
@@ -19,7 +16,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800{% if site_theme == 'cyber' %}&family=Inter:wght@400;500;600;700;800;900{% endif %}&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-  {% if site_theme == 'cyber' %}<link rel="stylesheet" href="{{ url_for('static', filename='css/cyber.css', v='spacing-5') }}"><link rel="stylesheet" href="{{ url_for('static', filename='css/cyber-shared.css', v='1') }}">{% endif %}
+  {% if site_theme == 'cyber' %}<link rel="stylesheet" href="{{ url_for('static', filename='css/cyber.css', v='glass-6') }}"><link rel="stylesheet" href="{{ url_for('static', filename='css/cyber-shared.css', v='1') }}">{% endif %}
   {% block head %}{% endblock %}
 </head>
 <body class="theme-{{ site_theme }} visual-effect-{{ visual_effect }} visual-speed-{{ visual_speed }}">
