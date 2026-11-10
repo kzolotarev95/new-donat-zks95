@@ -311,6 +311,9 @@ html{min-height:100%;background-color:var(--bg)}
 body{min-height:100vh;min-height:100dvh;background-repeat:no-repeat}
 
 .recipient-layout-single{grid-template-columns:minmax(0,1fr)}
+.service-terms .service-contact-button{width:fit-content;max-width:100%;min-height:36px;padding:8px 12px;gap:7px;font-size:.68rem;line-height:1.4}
+.service-contact-button span{font-size:.9rem}
+@media(max-width:760px){.service-terms .service-contact-button{min-height:40px}}
 .donor-search{display:flex;align-items:flex-end;gap:10px;margin-bottom:18px;flex-wrap:wrap}
 .donor-search label{flex:1 1 280px;min-width:0;color:var(--text);font-size:.72rem;font-weight:700}
 .donor-search input{display:block;width:100%;min-width:0;margin-top:7px;padding:11px 12px;border:1px solid var(--line);border-radius:3px;background:var(--bg);color:var(--text);font:inherit;font-weight:400;outline:none;color-scheme:dark}

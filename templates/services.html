@@ -28,7 +28,7 @@
     <h2 id="service-payment-title">Как заказать и оплатить услуги</h2>
     <p>Напишите в Telegram и опишите задачу. До оплаты мы согласуем содержание работы, ожидаемый результат, стоимость, сроки и порядок оплаты. Цена зависит от объёма и сложности задачи; фиксированных тарифов на сайте нет.</p>
     <p><a href="{{ url_for('site.requisites') }}">«Информация об исполнителе»</a></p>
-    <a class="button button-gold" href="{{ payment_recipient.contact_url }}" target="_blank" rel="noopener noreferrer">Обсудить задачу в Telegram <span>↗</span></a>
+    <a class="button button-gold service-contact-button" href="{{ payment_recipient.contact_url }}" target="_blank" rel="noopener noreferrer">Обсудить задачу в Telegram <span>↗</span></a>
   </article>
 </section>
 {% endblock %}
