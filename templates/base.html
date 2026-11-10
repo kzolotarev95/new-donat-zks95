@@ -17,9 +17,9 @@
   <title>{% block title %}ZKS95 Developer{% endblock %}</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800{% if site_theme == 'cyber' %}&family=Inter:wght@400;500;600;700;800;900{% endif %}&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-  {% if site_theme == 'cyber' %}<link rel="stylesheet" href="{{ url_for('static', filename='css/cyber.css', v='1') }}">{% endif %}
+  {% if site_theme == 'cyber' %}<link rel="stylesheet" href="{{ url_for('static', filename='css/cyber.css', v='reference-2') }}"><link rel="stylesheet" href="{{ url_for('static', filename='css/cyber-shared.css', v='1') }}">{% endif %}
   {% block head %}{% endblock %}
 </head>
 <body class="theme-{{ site_theme }} visual-effect-{{ visual_effect }} visual-speed-{{ visual_speed }}">
@@ -40,7 +40,7 @@
   <main>{% block content %}{% endblock %}</main>
   {% if site_theme == 'cyber' %}{% include 'themes/cyber/_footer.html' %}{% endif %}
   <script src="{{ url_for('static', filename='js/app.js', v='themes-1') }}" defer></script>
-  {% if site_theme == 'cyber' %}<script src="{{ url_for('static', filename='js/cyber.js', v='1') }}" defer></script>{% endif %}
+  {% if site_theme == 'cyber' %}<script src="{{ url_for('static', filename='js/cyber.js', v='reference-2') }}" defer></script>{% endif %}
   {% block scripts %}{% endblock %}
 </body>
 </html>

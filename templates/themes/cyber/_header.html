@@ -3,10 +3,13 @@
   <a class="brand" href="{{ url_for('site.index') }}" aria-label="ZKS95 Developer — главная"><span class="brand-mark">Z</span><span>ZK95<span class="brand-muted">DEV</span><span class="brand-period">.</span></span></a>
   <button class="menu-toggle" aria-label="Открыть меню" aria-expanded="false" aria-controls="cyber-navigation"><span></span><span></span></button>
   <nav class="nav-links" id="cyber-navigation" aria-label="Основная навигация">
-    <a href="{{ url_for('site.donate') }}" {% if request.endpoint == 'site.donate' %}aria-current="page"{% endif %}>Главная</a>
+    <a href="{{ url_for('site.donate') }}" {% if request.endpoint == 'site.donate' %}aria-current="page"{% endif %}>{{ icon('home',16) }} Главная</a>
     <a href="{{ url_for('site.donate', _anchor='features') }}">Возможности</a>
     <a href="{{ url_for('site.donate', _anchor='donate-form') }}">Поддержка</a>
     <a href="{{ url_for('site.contact') }}" {% if request.endpoint == 'site.contact' %}aria-current="page"{% endif %}>Контакты</a>
-    <a class="nav-donate" href="{{ url_for('site.donate', _anchor='donate-form') }}">{{ icon('heart',16) }} Donate</a>
   </nav>
+  <div class="cyber-header-actions">
+    <button type="button" class="cyber-ambient-toggle" aria-label="Уменьшить свечение и анимацию" title="Уменьшить свечение и анимацию" aria-pressed="false">{{ icon('sun',14) }}{{ icon('moon',13) }}</button>
+    <a class="cyber-header-donate" href="{{ url_for('site.donate', _anchor='donate-form') }}">Donate {{ icon('heart',15) }}</a>
+  </div>
 </header>
