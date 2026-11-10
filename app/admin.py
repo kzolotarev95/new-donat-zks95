@@ -176,8 +176,10 @@ def payments():
         page = 1
     status = (request.args.get("status") or "").strip()
     query = (request.args.get("q") or "").strip()[:120]
-    per_page = 30
     total = count_payments(status, query)
+    per_page = 15
+    pages = max(1, math.ceil(total / per_page))
+    page = min(page, pages)
     rows = list_payments(per_page, (page - 1) * per_page, status, query)
     limits_error = None
     try:
@@ -186,7 +188,7 @@ def payments():
         minimum, maximum = DEFAULT_LIMITS
         limits_error = "Лимиты заданы некорректно. Сохраните допустимый диапазон, чтобы включить приём платежей."
     return render_template("admin/payments.html", payments=rows, page=page,
-                           pages=max(1, math.ceil(total / per_page)), total=total, status=status, query=query,
+                           pages=pages, total=total, status=status, query=query,
                            payment_minimum=minimum, payment_maximum=maximum,
                            limit_floor=LOWEST_AMOUNT, limit_ceiling=HIGHEST_AMOUNT, limits_error=limits_error)
 
