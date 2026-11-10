@@ -20,14 +20,24 @@ def get_runtime_setting(key, default=""):
     return value if value != "" else default
 
 def set_runtime_setting(key, value):
-    value = (value or "").strip()
-    stored = encrypt_value(value) if key in SECRET_KEYS else value
-    get_db().execute(
-        """INSERT INTO app_settings(key, value, is_secret, updated_at) VALUES (?, ?, ?, ?)
-        ON CONFLICT(key) DO UPDATE SET value=excluded.value, is_secret=excluded.is_secret, updated_at=excluded.updated_at""",
-        (key, stored, int(key in SECRET_KEYS), _now()),
-    )
-    get_db().commit()
+    set_runtime_settings({key: value})
+
+
+def set_runtime_settings(values):
+    """Commit related settings together so readers never see half an update."""
+    now = _now()
+    rows = []
+    for key, value in values.items():
+        value = (value or "").strip()
+        stored = encrypt_value(value) if key in SECRET_KEYS else value
+        rows.append((key, stored, int(key in SECRET_KEYS), now))
+    db = get_db()
+    with db:
+        db.executemany(
+            """INSERT INTO app_settings(key, value, is_secret, updated_at) VALUES (?, ?, ?, ?)
+            ON CONFLICT(key) DO UPDATE SET value=excluded.value, is_secret=excluded.is_secret, updated_at=excluded.updated_at""",
+            rows,
+        )
 
 def has_runtime_setting(key):
     row = get_db().execute("SELECT 1 FROM app_settings WHERE key = ?", (key,)).fetchone()

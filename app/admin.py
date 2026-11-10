@@ -13,6 +13,8 @@ from flask import Blueprint, abort, flash, redirect, render_template, request, s
 from werkzeug.security import check_password_hash, generate_password_hash
 from .db import (DONOR_COLORS, count_payments, count_push_subscriptions, create_donor, delete_donor, delete_push_subscription, get_admin_user, get_admin_user_by_id, get_payment, get_db, list_donors, list_payments, mark_admin_login, payment_stats, record_donor_payment, update_admin_account, update_admin_password, update_donor, update_payment, upsert_push_subscription)
 from .payments import fetch_payment
+from .payment_limits import (DEFAULT_LIMITS, HIGHEST_AMOUNT, LOWEST_AMOUNT, InvalidPaymentLimits,
+                             get_payment_limits, save_payment_limits)
 from .push import generate_vapid_keys, notify_payment_success, push_settings, send_push
 from .security import admin_required, authenticated_admin, csrf_token, establish_admin_session, require_csrf
 from . import two_factor
@@ -171,7 +173,29 @@ def payments():
     per_page = 30
     total = count_payments(status, query)
     rows = list_payments(per_page, (page - 1) * per_page, status, query)
-    return render_template("admin/payments.html", payments=rows, page=page, pages=max(1, math.ceil(total / per_page)), total=total, status=status, query=query)
+    limits_error = None
+    try:
+        minimum, maximum = get_payment_limits()
+    except InvalidPaymentLimits:
+        minimum, maximum = DEFAULT_LIMITS
+        limits_error = "Лимиты заданы некорректно. Сохраните допустимый диапазон, чтобы включить приём платежей."
+    return render_template("admin/payments.html", payments=rows, page=page,
+                           pages=max(1, math.ceil(total / per_page)), total=total, status=status, query=query,
+                           payment_minimum=minimum, payment_maximum=maximum,
+                           limit_floor=LOWEST_AMOUNT, limit_ceiling=HIGHEST_AMOUNT, limits_error=limits_error)
+
+
+@admin_bp.post("/payments/limits")
+@admin_required
+def payment_limits_save():
+    try:
+        save_payment_limits(request.form.get("minimum"), request.form.get("maximum"))
+    except InvalidPaymentLimits as exc:
+        flash(str(exc), "error")
+    else:
+        log.info("Admin updated payment limits user_id=%s", session["admin_user_id"])
+        flash("Лимиты сохранены. Новые платежи используют их сразу.", "success")
+    return redirect(url_for("admin.payments", _anchor="payment-limits"))
 
 
 def _donor_form_values():

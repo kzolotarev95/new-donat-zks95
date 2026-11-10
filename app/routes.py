@@ -10,6 +10,7 @@ from flask import Blueprint, Response, current_app, jsonify, redirect, render_te
 from .db import create_payment_record, donor_color, get_donor, get_payment, list_donors, record_donor_payment, update_payment
 from .github import fetch_repositories
 from .payments import create_payment, fetch_payment, normalize_amount
+from .payment_limits import DEFAULT_LIMITS, InvalidPaymentLimits, donation_amount_options, get_payment_limits
 from .push import notify_payment_success
 from .settings import get_runtime_setting
 
@@ -72,7 +73,15 @@ def support():
 
 @bp.route("/donate", methods=["GET"])
 def donate():
-    return render_template("donate.html", payment_error=None, donors=list_donors())
+    error = None
+    try:
+        limits = get_payment_limits()
+    except InvalidPaymentLimits:
+        limits = DEFAULT_LIMITS
+        error = "Приём платежей временно недоступен. Попробуйте позже."
+        log.error("Invalid payment limits; donation payments are disabled")
+    return render_template("donate.html", payment_error=error, donors=list_donors(),
+                           **donation_amount_options(*limits))
 
 
 @bp.get("/api/donors/<int:donor_id>/avatar.svg")
@@ -124,6 +133,9 @@ def payments_api():
             "customer_nickname": nickname, "message": message, "payload": result.json(),
         })
         return jsonify(payment_id=payment_id, confirmation_url=result.confirmation.confirmation_url)
+    except InvalidPaymentLimits:
+        log.error("Invalid payment limits; rejected payment creation")
+        return jsonify(error="Приём платежей временно недоступен. Попробуйте позже."), 503
     except ValueError as exc:
         return jsonify(error=str(exc)), 400
     except Exception:

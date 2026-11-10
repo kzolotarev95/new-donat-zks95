@@ -2,6 +2,7 @@
 import uuid
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 from .settings import get_runtime_setting
+from .payment_limits import get_payment_limits
 
 
 def _sdk():
@@ -14,14 +15,19 @@ def _sdk():
 
 def normalize_amount(raw):
     try:
-        amount = Decimal(str(raw).replace(",", ".")).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+        text = str(raw).replace(",", ".")
+        if len(text) > 64:
+            raise ValueError
+        amount = Decimal(text).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+        if not amount.is_finite():
+            raise ValueError
     except (InvalidOperation, ValueError, TypeError):
         raise ValueError("Введите сумму в рублях")
-    from flask import current_app
-    if amount < Decimal(str(current_app.config["PAYMENT_MIN_AMOUNT"])):
-        raise ValueError(f"Минимальная сумма — {current_app.config['PAYMENT_MIN_AMOUNT']:.0f} ₽")
-    if amount > Decimal(str(current_app.config["PAYMENT_MAX_AMOUNT"])):
-        raise ValueError("Сумма превышает допустимый лимит")
+    minimum, maximum = get_payment_limits()
+    if amount < minimum:
+        raise ValueError(f"Минимальная сумма — {minimum:,} ₽".replace(",", " "))
+    if amount > maximum:
+        raise ValueError(f"Максимальная сумма — {maximum:,} ₽".replace(",", " "))
     return amount
 
 

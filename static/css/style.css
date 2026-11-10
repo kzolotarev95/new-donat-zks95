@@ -283,3 +283,25 @@ h2{font-size:clamp(1.55rem,3vw,2.45rem)!important;line-height:1.12;letter-spacin
 .account-manual summary:focus-visible{outline:2px solid var(--gold);outline-offset:5px}
 @media(max-width:900px){.account-layout{grid-template-columns:minmax(0,1fr)}}
 @media(max-width:600px){.account-command-items{grid-template-columns:minmax(0,1fr)}.account-session-actions{align-items:stretch;flex-direction:column}.account-session-actions .button{width:100%}.account-session-data{grid-template-columns:minmax(0,1fr)}.account-session{padding:12px}.account-manual-hint{display:none}.account-command .button{width:100%}.account-section-head{align-items:flex-start}}
+
+/* Donation limits share one saved range with the public checkout. */
+.admin-panel.payment-limits{padding:22px;margin-bottom:22px;scroll-margin-top:20px}
+.payment-limits .panel-head{padding:0 0 18px;margin:0}
+.payment-limit-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+.payment-limit-control{min-width:0;padding:16px;border:1px solid var(--line);border-radius:6px;background:rgba(0,0,0,.16)}
+.payment-limit-heading{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.payment-limit-heading label{margin:0;font-size:.75rem;font-weight:700;line-height:1.5}
+.payment-limit-number{display:flex;align-items:center;gap:7px;flex-shrink:0;color:var(--muted);font-size:.78rem}
+.payment-limit-number input[type=number]{width:130px;max-width:100%;height:38px;margin:0;padding:8px 10px;border:1px solid var(--line);border-radius:4px;background:var(--bg);color:var(--text);font:inherit;font-variant-numeric:tabular-nums;text-align:center;color-scheme:dark}
+.payment-limits input[type=range]{display:block;width:100%;height:6px;min-height:0;margin:24px 0 14px;padding:0;border:0;border-radius:999px;appearance:none;-webkit-appearance:none;background:linear-gradient(to right,var(--gold) var(--range-progress,0%),#32343b var(--range-progress,0%));cursor:pointer;accent-color:var(--gold);touch-action:pan-y}
+.payment-limits input[type=range]::-webkit-slider-thumb{appearance:none;-webkit-appearance:none;width:18px;height:18px;border:2px solid #f45268;border-radius:50%;background:var(--gold);box-shadow:0 0 0 4px rgba(225,6,32,.12)}
+.payment-limits input[type=range]::-moz-range-thumb{width:15px;height:15px;border:2px solid #f45268;border-radius:50%;background:var(--gold);box-shadow:0 0 0 4px rgba(225,6,32,.12)}
+.payment-limits input[type=range]:focus-visible{outline:2px solid #ff687a;outline-offset:7px}
+.payment-limit-scale{display:flex;justify-content:space-between;gap:10px;color:var(--muted);font-size:.62rem}
+.payment-limits-summary{margin:18px 0 0;font-size:.78rem;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.payment-limits-pending{margin:8px 0 0;color:#ff8a97;font-size:.7rem}.payment-limits-pending[hidden]{display:none}
+.payment-limits-error{padding:12px;margin:0 0 16px;border:1px solid rgba(225,6,32,.4);border-radius:5px;color:#ff8a97;font-size:.75rem;line-height:1.6}
+.payment-limits-footer{display:flex;align-items:center;justify-content:space-between;gap:18px;margin-top:18px}
+.payment-limits-footer .muted{max-width:630px;margin:0;line-height:1.7}.payment-limits-footer .button{flex-shrink:0}
+.donate-form .quick-amounts{grid-template-columns:repeat(var(--quick-amount-count,4),minmax(0,1fr))}
+@media(max-width:760px){.payment-limit-grid{grid-template-columns:minmax(0,1fr);gap:12px}.admin-panel.payment-limits{padding:16px}.payment-limit-control{padding:14px}.payment-limit-number input[type=number]{width:115px}.payment-limits-footer{align-items:stretch;flex-direction:column;gap:14px}.payment-limits-footer .button{width:100%}.payment-limit-heading label{font-size:.72rem}}

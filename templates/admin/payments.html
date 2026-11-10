@@ -1,1 +1,35 @@
-{% extends "admin/base.html" %}{% block title %}Платежи — ZKS95 Admin{% endblock %}{% block content %}<div class="admin-title"><div><p class="eyebrow">YooKassa / Ledger</p><h1>Транзакции.</h1></div></div><form class="filters" method="get"><input name="q" value="{{ query }}" placeholder="ID платежа или никнейм"><select name="status"><option value="">Все статусы</option>{% for value in ['pending','waiting_for_capture','succeeded','canceled'] %}<option value="{{ value }}" {% if status==value %}selected{% endif %}>{{ value }}</option>{% endfor %}</select><button class="button button-gold" type="submit">Фильтр</button></form><section class="admin-panel"><div class="panel-head"><h2>{{ total }} записей</h2></div><div class="table-wrap"><table><thead><tr><th>Дата</th><th>ID</th><th>Никнейм</th><th>Сумма</th><th>Статус</th><th></th></tr></thead><tbody>{% for payment in payments %}<tr><td>{{ payment.created_at[:19].replace('T',' ') }}</td><td class="mono">{{ payment.payment_id }}</td><td>{{ payment.customer_nickname or payment.customer_email or '—' }}</td><td>{{ payment.amount }} {{ payment.currency }}</td><td><span class="status status-{{ payment.status }}">{{ payment.status }}</span></td><td><a class="row-action" href="{{ url_for('admin.payment_detail', payment_id=payment.payment_id) }}">Открыть ↗</a></td></tr>{% else %}<tr><td colspan="6" class="muted">Ничего не найдено.</td></tr>{% endfor %}</tbody></table></div><div class="pagination">{% if page>1 %}<a href="{{ url_for('admin.payments',page=page-1,status=status,q=query) }}">← Назад</a>{% endif %}<span>{{ page }} / {{ pages }}</span>{% if page<pages %}<a href="{{ url_for('admin.payments',page=page+1,status=status,q=query) }}">Дальше →</a>{% endif %}</div></section>{% endblock %}
+{% extends "admin/base.html" %}
+{% block title %}Платежи — ZKS95 Admin{% endblock %}
+{% block content %}
+<div class="admin-title"><div><p class="eyebrow">YooKassa / Ledger</p><h1>Транзакции.</h1></div></div>
+<section class="admin-panel payment-limits" id="payment-limits" aria-labelledby="payment-limits-title">
+  <div class="panel-head"><h2 id="payment-limits-title">Суммы платежей</h2></div>
+  {% if limits_error %}<p class="payment-limits-error" role="alert">{{ limits_error }}</p>{% endif %}
+  <form method="post" action="{{ url_for('admin.payment_limits_save') }}" class="payment-limits-form" data-floor="{{ limit_floor }}" data-ceiling="{{ limit_ceiling }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="payment-limit-grid">
+      {% for kind,title in [('minimum','Минимальная сумма'),('maximum','Максимальная сумма')] %}
+      {% set amount = payment_minimum if kind == 'minimum' else payment_maximum %}
+      <div class="payment-limit-control" data-limit="{{ kind }}">
+        <div class="payment-limit-heading">
+          <label for="payment-{{ kind }}-number" id="payment-{{ kind }}-label">{{ title }}</label>
+          <div class="payment-limit-number"><input id="payment-{{ kind }}-number" type="number" name="{{ kind }}" min="{{ limit_floor }}" max="{{ limit_ceiling }}" step="1" value="{{ amount }}" inputmode="numeric" required><span>₽</span></div>
+        </div>
+        <input id="payment-{{ kind }}-range" type="range" min="{{ limit_floor }}" max="{{ limit_ceiling }}" step="1" value="{{ amount }}" aria-labelledby="payment-{{ kind }}-label" disabled>
+        <div class="payment-limit-scale" aria-hidden="true"><span>1 ₽</span><span>{{ '{:,}'.format(limit_ceiling).replace(',', ' ') }} ₽</span></div>
+      </div>
+      {% endfor %}
+    </div>
+    <p class="payment-limits-summary" aria-live="polite">Диапазон: от {{ '{:,}'.format(payment_minimum).replace(',', ' ') }} до {{ '{:,}'.format(payment_maximum).replace(',', ' ') }} ₽</p>
+    <p class="payment-limits-pending" role="status" hidden>Есть несохранённые изменения.</p>
+    <div class="payment-limits-footer"><p class="muted">Передвиньте ползунки или введите точные суммы. После сохранения лимиты сразу применятся к форме доната и новым платежам.</p><button class="button button-gold" type="submit">Сохранить лимиты</button></div>
+  </form>
+</section>
+<form class="filters" method="get"><input name="q" value="{{ query }}" placeholder="ID платежа или никнейм"><select name="status"><option value="">Все статусы</option>{% for value in ['pending','waiting_for_capture','succeeded','canceled'] %}<option value="{{ value }}" {% if status==value %}selected{% endif %}>{{ value }}</option>{% endfor %}</select><button class="button button-gold" type="submit">Фильтр</button></form>
+<section class="admin-panel">
+  <div class="panel-head"><h2>{{ total }} записей</h2></div>
+  <div class="table-wrap"><table><thead><tr><th>Дата</th><th>ID</th><th>Никнейм</th><th>Сумма</th><th>Статус</th><th></th></tr></thead><tbody>{% for payment in payments %}<tr><td>{{ payment.created_at[:19].replace('T',' ') }}</td><td class="mono">{{ payment.payment_id }}</td><td>{{ payment.customer_nickname or payment.customer_email or '—' }}</td><td>{{ payment.amount }} {{ payment.currency }}</td><td><span class="status status-{{ payment.status }}">{{ payment.status }}</span></td><td><a class="row-action" href="{{ url_for('admin.payment_detail', payment_id=payment.payment_id) }}">Открыть ↗</a></td></tr>{% else %}<tr><td colspan="6" class="muted">Ничего не найдено.</td></tr>{% endfor %}</tbody></table></div>
+  <div class="pagination">{% if page>1 %}<a href="{{ url_for('admin.payments',page=page-1,status=status,q=query) }}">← Назад</a>{% endif %}<span>{{ page }} / {{ pages }}</span>{% if page<pages %}<a href="{{ url_for('admin.payments',page=page+1,status=status,q=query) }}">Дальше →</a>{% endif %}</div>
+</section>
+{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='js/payment-limits.js') }}" defer></script>{% endblock %}
