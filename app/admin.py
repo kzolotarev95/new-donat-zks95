@@ -221,7 +221,17 @@ def _donor_form_values():
 @admin_bp.get("/donors")
 @admin_required
 def donors():
-    return render_template("admin/donors.html", donors=list_donors(active_only=False), donor_colors=DONOR_COLORS)
+    query = (request.args.get("q") or "").strip()[:120]
+    records = list_donors(active_only=False)
+    total = len(records)
+    if query:
+        needle = query.casefold()
+        records = [donor for donor in records if any(
+            needle in (donor[field] or "").casefold()
+            for field in ("nickname", "social_url", "note")
+        )]
+    return render_template("admin/donors.html", donors=records, donor_colors=DONOR_COLORS,
+                           query=query, total_donors=total)
 
 
 @admin_bp.post("/donors")
@@ -240,7 +250,7 @@ def create_donor_admin():
             flash("Донатер добавлен.", "success")
         except sqlite3.IntegrityError:
             flash("Такой никнейм уже есть в списке.", "error")
-    return redirect(url_for("admin.donors"))
+    return redirect(url_for("admin.donors", q=(request.form.get("q") or "").strip()[:120] or None))
 
 
 @admin_bp.post("/donors/<int:donor_id>")
@@ -259,7 +269,7 @@ def edit_donor(donor_id):
             flash("Данные донатера обновлены.", "success")
         except sqlite3.IntegrityError:
             flash("Такой никнейм уже есть в списке.", "error")
-    return redirect(url_for("admin.donors"))
+    return redirect(url_for("admin.donors", q=(request.form.get("q") or "").strip()[:120] or None))
 
 
 @admin_bp.post("/donors/<int:donor_id>/delete")
@@ -267,7 +277,7 @@ def edit_donor(donor_id):
 def remove_donor(donor_id):
     delete_donor(donor_id)
     flash("Донатер удалён.", "success")
-    return redirect(url_for("admin.donors"))
+    return redirect(url_for("admin.donors", q=(request.form.get("q") or "").strip()[:120] or None))
 
 
 @admin_bp.post("/payments/<payment_id>/refresh")

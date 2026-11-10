@@ -1,11 +1,12 @@
 {% extends "admin/base.html" %}
 {% block title %}Донатеры — ZKS95 Admin{% endblock %}
 {% block content %}<div class="donor-admin-page">
-<div class="admin-title"><div><p class="eyebrow">Community / Supporters</p><h1>Донатеры.</h1></div><span class="admin-user">{{ donors|length }} записей</span></div>
+<div class="admin-title"><div><p class="eyebrow">Community / Supporters</p><h1>Донатеры.</h1></div><span class="admin-user">{{ total_donors }} записей</span></div>
 <section class="admin-panel donor-create-panel">
   <div class="panel-head"><h2>Добавить вручную</h2><span class="muted">Автоматические донатеры появятся после подтверждённой оплаты.</span></div>
   <form class="donor-create-form" method="post" action="{{ url_for('admin.create_donor_admin') }}">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="q" value="{{ query }}">
     <label>Никнейм<input name="nickname" maxlength="64" placeholder="например, zks95" required></label>
     <label>Цвет<select name="color">{% for value,label in donor_colors.items() %}<option value="{{ value }}">{{ label }}</option>{% endfor %}</select></label>
     <label>Сумма, ₽<input type="number" name="total_amount" min="0" step="0.01" value="0" required></label>
@@ -17,10 +18,17 @@
 </section>
 <section class="admin-panel">
   <div class="panel-head"><h2>Список донатеров</h2><span class="muted">Цвет ника отображается на Donate</span></div>
+  <form class="donor-search" method="get" action="{{ url_for('admin.donors') }}" role="search" aria-label="Поиск донатеров">
+    <label for="donor-search">Поиск по донатерам<input id="donor-search" type="search" name="q" value="{{ query }}" maxlength="120" placeholder="Никнейм, ссылка или подпись" autocomplete="off"></label>
+    <button class="button button-gold" type="submit">Найти</button>
+    {% if query %}<a class="button button-ghost" href="{{ url_for('admin.donors') }}">Сбросить</a>{% endif %}
+  </form>
+  {% if query %}<p class="donor-search-summary" role="status">Найдено {{ donors|length }} из {{ total_donors }} по запросу «{{ query }}».</p>{% endif %}
   <div class="donor-admin-list">
   {% for donor in donors %}
     <form class="donor-admin-row{% if donor.pinned %} is-pinned{% endif %}" method="post" action="{{ url_for('admin.edit_donor', donor_id=donor.id) }}">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="q" value="{{ query }}">
       <div class="donor-admin-name"><span class="donor-swatch donor-{{ donor.color }}" style="--donor-accent: {{ donor_color(donor.color) }}"></span><strong>{{ donor.nickname }}</strong><small>{{ donor.donations_count }} платеж(ей) · {{ donor.total_amount }} ₽</small></div>
       <input name="nickname" value="{{ donor.nickname }}" maxlength="64" required>
       <select name="color">{% for value,label in donor_colors.items() %}<option value="{{ value }}" {% if donor.color == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select>
@@ -33,7 +41,7 @@
       <button class="button donor-delete" type="submit" formaction="{{ url_for('admin.remove_donor', donor_id=donor.id) }}" formmethod="post" onclick="return confirm('Удалить этого донатера?')">Удалить</button>
     </form>
   {% else %}
-    <p class="muted">Пока нет донатеров. Добавьте первого вручную или дождитесь подтверждённого платежа.</p>
+    {% if query %}<p class="donor-search-empty">Донатеры не найдены. Попробуйте другой запрос или сбросьте поиск.</p>{% else %}<p class="muted">Пока нет донатеров. Добавьте первого вручную или дождитесь подтверждённого платежа.</p>{% endif %}
   {% endfor %}
   </div>
 </section>

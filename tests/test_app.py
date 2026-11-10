@@ -33,9 +33,9 @@ def test_recipient_and_services_are_public(client):
     details = client.get("/requisites")
     assert details.status_code == 200
     body = details.get_data(as_text=True)
-    assert "Золотарев Кирилл Сергеевич" in body
-    assert "Самозанятый (плательщик налога на профессиональный доход)" in body
-    assert "182501591471" in body
+    assert "Назначение платежей" in body
+    assert "Исполнитель и получатель платежей" not in body
+    assert "recipient-details" not in body
     assert 'href="/services"' in body
     services = client.get("/services")
     assert services.status_code == 200

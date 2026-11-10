@@ -7,16 +7,7 @@
   <h1>Информация<br><em>об исполнителе.</em></h1>
   <p class="page-lead">Кто оказывает услуги и получает платежи на этом сайте.</p>
 </section>
-<section class="shell recipient-layout" aria-label="Реквизиты и назначение платежей">
-  <article class="recipient-card">
-    <h2>Исполнитель и получатель платежей</h2>
-    <dl class="recipient-details">
-      <div><dt>Исполнитель</dt><dd>{{ payment_recipient.name }}</dd></div>
-      <div><dt>Статус</dt><dd>{{ payment_recipient.status }}</dd></div>
-      <div><dt>ИНН</dt><dd>{{ payment_recipient.inn }}</dd></div>
-      <div><dt>Связь с исполнителем</dt><dd><a href="{{ payment_recipient.contact_url }}" target="_blank" rel="noopener noreferrer">Telegram {{ payment_recipient.contact_label }}</a></dd></div>
-    </dl>
-  </article>
+<section class="shell recipient-layout recipient-layout-single" aria-label="Назначение платежей">
   <article class="recipient-card">
     <h2>Назначение платежей</h2>
     <p>Платежи принимаются за услуги разработки, техническую поддержку и развитие авторских проектов ZKS95 Developer, а также в качестве добровольной финансовой поддержки работы разработчика над этими проектами.</p>
