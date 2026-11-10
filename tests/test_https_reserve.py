@@ -111,7 +111,9 @@ def test_db_request_is_read_only_and_accepts_only_a_boolean(tmp_path):
 @pytest.mark.parametrize("response,valid", [("true", True), ("false", True), ("null", True), ('"1"', False), ('{"port":22}', False)])
 def test_privileged_side_accepts_only_typed_boolean_from_reader(tmp_path, monkeypatch, response, valid):
     def run(arguments, **kwargs):
-        assert arguments[:4] == ["/usr/sbin/runuser", "-u", "zks95", "--"]
+        assert arguments[:2] == ["/usr/bin/python3", "-I"]
+        assert kwargs["user"] == "zks95" and kwargs["group"] == "zks95"
+        assert kwargs["extra_groups"] == []
         return SimpleNamespace(returncode=0, stdout=response, stderr="")
     monkeypatch.setattr(helper.subprocess, "run", run)
     if valid:

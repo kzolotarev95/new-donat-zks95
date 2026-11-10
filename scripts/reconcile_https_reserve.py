@@ -170,9 +170,10 @@ def unprivileged_request(database):
     # SQLite WAL/SHM must never be created as root in the web user's data folder.
     # Parse the application-controlled database with the application's privileges.
     result = subprocess.run([
-        "/usr/sbin/runuser", "-u", "zks95", "--", "/usr/bin/python3", "-I",
+        "/usr/bin/python3", "-I",
         str(Path(__file__).resolve()), "--read-request", str(database),
-    ], capture_output=True, text=True, timeout=5)
+    ], user="zks95", group="zks95", extra_groups=[],
+        capture_output=True, text=True, timeout=5)
     if result.returncode:
         log.error("Cannot read reserve setting as zks95: %s", result.stderr[-1000:])
         raise ReserveError("Не удалось прочитать настройку резервного порта. Проверьте журнал службы по SSH.")
@@ -295,7 +296,7 @@ def main():
     except (ReserveError, OSError, sqlite3.Error, subprocess.SubprocessError) as exc:
         state = "error"
         message = str(exc) if isinstance(exc, ReserveError) else "Не удалось применить настройку. Проверьте журнал службы портов по SSH."
-        log.error("HTTPS reserve: %s", message)
+        log.error("HTTPS reserve: %s", message, exc_info=not isinstance(exc, ReserveError))
     status = {"requested_enabled": desired, "enabled": enabled, "state": state,
               "message": message, "domain": domain, "checked_at": time.time()}
     atomic_write(STATE_DIR / "status.json", json.dumps(status, ensure_ascii=False) + "\n")
