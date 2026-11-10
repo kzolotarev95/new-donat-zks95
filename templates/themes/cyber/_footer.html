@@ -1,0 +1,9 @@
+{% from 'themes/cyber/_icons.html' import icon %}
+<footer class="cyber-footer shell">
+  <div class="cyber-footer-top">
+    <div><a class="brand" href="{{ url_for('site.index') }}"><span class="brand-mark">Z</span><span>ZK95<span class="brand-muted">DEV</span>.</span></a><p>Код, который помогает.<br>Проекты, которые развиваются вместе с вами.</p></div>
+    <nav aria-label="Проекты и связь"><span>Разработка</span><a href="{{ url_for('site.projects') }}">Проекты</a><a href="{{ url_for('site.services') }}">Услуги</a><a href="{{ url_for('site.contact') }}">Контакты</a><a href="https://github.com/{{ config.GITHUB_USERNAME }}" target="_blank" rel="noopener noreferrer">GitHub ↗</a></nav>
+    <nav aria-label="Документы"><span>Информация</span><a href="{{ url_for('site.privacy') }}">Конфиденциальность</a><a href="{{ url_for('site.terms') }}">Условия использования</a><a href="{{ url_for('site.requisites') }}">Информация об исполнителе</a><a href="{{ url_for('site.faq') }}">Вопросы и ответы</a></nav>
+  </div>
+  <div class="cyber-footer-bottom"><span>© {{ year }} ZKS95 Developer</span><span>{{ icon('heart',14) }} Спасибо, что вы с нами!</span><a href="{{ payment_recipient.contact_url }}" target="_blank" rel="noopener noreferrer">{{ payment_recipient.contact_label }}</a></div>
+</footer>

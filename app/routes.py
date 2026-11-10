@@ -15,6 +15,7 @@ from .payments import create_payment, fetch_payment, normalize_amount
 from .payment_limits import DEFAULT_LIMITS, InvalidPaymentLimits, donation_amount_options, get_payment_limits
 from .push import notify_payment_success
 from .settings import get_runtime_setting
+from .themes import get_site_theme, cyber_amount_options
 
 bp = Blueprint("site", __name__)
 log = logging.getLogger(__name__)
@@ -82,7 +83,9 @@ def donate():
         limits = DEFAULT_LIMITS
         error = "Приём платежей временно недоступен. Попробуйте позже."
         log.error("Invalid payment limits; donation payments are disabled")
-    return render_template("donate.html", payment_error=error, donors=list_donors(),
+    template = "themes/cyber/donate.html" if get_site_theme() == "cyber" else "donate.html"
+    return render_template(template, payment_error=error, donors=list_donors(),
+                           cyber_quick_amounts=cyber_amount_options(*limits),
                            **donation_amount_options(*limits))
 
 
@@ -250,6 +253,16 @@ def contact():
 @bp.get("/faq")
 def faq():
     return render_template("faq.html")
+
+
+@bp.get("/privacy")
+def privacy():
+    return render_template("privacy.html")
+
+
+@bp.get("/terms")
+def terms():
+    return render_template("terms.html")
 
 
 @bp.errorhandler(404)

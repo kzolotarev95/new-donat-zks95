@@ -23,6 +23,7 @@ from .login_notifications import enqueue_login
 from .admin_manual import COMMAND_GROUPS
 from .settings import get_runtime_setting, set_runtime_setting
 from .visual import VISUAL_EFFECTS, VISUAL_SPEEDS, normalize_visual_effect, normalize_visual_speed
+from .themes import SITE_THEMES, normalize_site_theme
 from .captcha import site_key as recaptcha_site_key, verify as verify_recaptcha
 from .backup import export_backup, import_backup
 from .https_reserve import SETTING as HTTPS_RESERVE_SETTING, reserve_status
@@ -536,6 +537,9 @@ def settings():
             ("VISUAL_EFFECT", "Эффект", False, "select", tuple(VISUAL_EFFECTS.items())),
             ("VISUAL_EFFECT_SPEED", "Скорость", False, "select", tuple(VISUAL_SPEEDS.items())),
         ]),
+        ("Темы сайта", [
+            ("SITE_THEME", "Дизайн сайта", False, "select", tuple(SITE_THEMES.items())),
+        ]),
     ]
     if request.method == "POST":
         for _section, fields in sections:
@@ -547,6 +551,8 @@ def settings():
                     value = normalize_visual_effect(value)
                 elif key == "VISUAL_EFFECT_SPEED":
                     value = normalize_visual_speed(value)
+                elif key == "SITE_THEME":
+                    value = normalize_site_theme(request.form.get(key, get_runtime_setting(key, "classic")))
                 set_runtime_setting(key, value)
         flash("Настройки сохранены. Новые платежи используют их сразу.", "success")
         return redirect(url_for("admin.settings"))
@@ -554,6 +560,12 @@ def settings():
     for _section, fields in sections:
         for key, _label, secret, _kind, _options in fields:
             value = get_runtime_setting(key, current_app.config.get(key, ""))
+            if key == "SITE_THEME":
+                value = normalize_site_theme(value)
+            elif key == "VISUAL_EFFECT":
+                value = normalize_visual_effect(value)
+            elif key == "VISUAL_EFFECT_SPEED":
+                value = normalize_visual_speed(value)
             values[key] = "" if secret else value
     user = get_admin_user_by_id(session["admin_user_id"])
     return render_template("admin/settings.html", sections=sections, values=values,

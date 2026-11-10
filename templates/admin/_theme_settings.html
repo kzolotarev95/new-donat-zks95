@@ -1,0 +1,11 @@
+<div class="site-theme-options" id="site-themes">
+  {% for key,title in [('classic','Red / Black'),('cyber','Premium Cyber')] %}
+  <label class="site-theme-option">
+    <input type="radio" form="site-settings-form" name="SITE_THEME" value="{{ key }}" {% if values.SITE_THEME == key %}checked{% endif %} required>
+    <span class="theme-preview theme-preview-{{ key }}" aria-hidden="true"><span class="theme-preview-nav"></span><span class="theme-preview-title"></span><span class="theme-preview-form"></span><span class="theme-preview-cards"></span></span>
+    <span class="theme-choice-title">{{ title }}</span>
+    <span class="theme-choice-description">{{ 'Текущий красно-чёрный дизайн' if key == 'classic' else 'Сине-фиолетовый · стекло · неон' }}</span>
+  </label>
+  {% endfor %}
+</div>
+<p class="theme-settings-help">Выберите дизайн и нажмите «Сохранить настройки». Переключение сохраняет платежи, донатеров, лимиты и глобальные эффекты. Для возврата выберите Red / Black.</p>

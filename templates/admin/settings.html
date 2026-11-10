@@ -1,5 +1,6 @@
 {% extends "admin/base.html" %}
 {% block title %}Настройки — ZKS95 Admin{% endblock %}
+{% block head %}<link rel="stylesheet" href="{{ url_for('static', filename='css/theme-settings.css') }}">{% endblock %}
 {% block content %}
 <div class="admin-title"><div><p class="eyebrow">Runtime configuration</p><h1>Настройки <em>системы.</em></h1></div></div>
 <div class="admin-card settings-card">
@@ -8,6 +9,9 @@
     {% for section_title,fields in sections %}
     <section class="settings-section">
       <h2>{{ section_title }}</h2>
+      {% if section_title == 'Темы сайта' %}
+      {% include 'admin/_theme_settings.html' %}
+      {% else %}
       {% for key,label,secret,kind,options in fields %}
       <label>{{ label }}
         {% if kind == 'select' %}
@@ -17,11 +21,12 @@
         {% endif %}
       </label>
       {% endfor %}
+      {% endif %}
     </section>
     {% if section_title == 'Google reCAPTCHA' %}{% include "admin/_two_factor_settings.html" %}{% include "admin/_https_reserve_settings.html" %}{% endif %}
     {% endfor %}
   </div>
-  <div class="settings-note">Эффект и скорость применяются ко всем страницам сайта сразу после сохранения. Секретные значения хранятся в SQLite в зашифрованном виде и не показываются обратно.</div>
+  <div class="settings-note">Тема, эффект и скорость применяются ко всем страницам после сохранения и обновления страницы. Выбор видят все посетители. Секретные значения хранятся в SQLite в зашифрованном виде и не показываются обратно.</div>
   <button class="button button-gold" form="site-settings-form" type="submit">Сохранить настройки</button>
 </div>
 {% include "admin/_backup_sections.html" %}
