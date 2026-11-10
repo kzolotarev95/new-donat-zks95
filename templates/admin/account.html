@@ -15,6 +15,7 @@
   </form>
   <section class="admin-panel account-sessions" id="sessions" aria-labelledby="sessions-title">
     <div class="account-section-head"><h2 id="sessions-title">История входов и сеансов</h2><span class="muted">Всего: {{ sessions.total }}</span></div>
+    <p class="muted">Устройства запоминаются автоматически: вход сохраняется до 10 лет бездействия и продлевается при использовании. Чтобы отключить доступ, нажмите «Выйти» или завершите нужный сеанс ниже.</p>
     <p class="muted">Время указано в UTC. История записывается с момента установки этого обновления. IP может меняться при смене сети или использовании VPN.</p>
     <div class="account-session-actions">
       <form method="post" action="{{ url_for('admin.revoke_sessions') }}">

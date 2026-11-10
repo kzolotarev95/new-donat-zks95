@@ -85,9 +85,12 @@ def validate(user):
     if (not record or record["revoked_at"] or record["expires_at"] <= now
             or record["auth_version"] != user["auth_version"]):
         return False
-    if now - record["last_seen_at"] >= 60:
+    expires_at = now + _lifetime()
+    # Upgrade still-valid sessions created with the old one-hour lifetime on
+    # their first visit. Expired/revoked sessions above must never be revived.
+    if now - record["last_seen_at"] >= 60 or record["expires_at"] < expires_at - 60:
         get_db().execute("UPDATE admin_sessions SET last_seen_at = ?, expires_at = ? WHERE id = ? AND revoked_at IS NULL",
-                         (now, now + _lifetime(), record["id"]))
+                         (now, expires_at, record["id"]))
         get_db().commit()
     return True
 

@@ -1,6 +1,7 @@
 """ZKS95 Developer web application."""
 from flask import Flask
 from pathlib import Path
+from datetime import timedelta
 
 from .config import Settings
 from .db import close_db, donor_color, init_app as init_db_app
@@ -46,7 +47,10 @@ def create_app(test_config=None):
         SESSION_COOKIE_HTTPONLY=True,
         SESSION_COOKIE_SAMESITE="Lax",
         SESSION_COOKIE_SECURE=app.config["APP_ENV"] == "production",
-        PERMANENT_SESSION_LIFETIME=3600,
+        # Keep each signed device cookie across browser/app restarts. Both the
+        # cookie and the revocable database session renew during normal use.
+        PERMANENT_SESSION_LIFETIME=timedelta(days=3650),
+        SESSION_REFRESH_EACH_REQUEST=True,
     )
     app.config.setdefault("JSON_SORT_KEYS", False)
     app.config.setdefault("TEMPLATES_AUTO_RELOAD", app.config["APP_ENV"] != "production")

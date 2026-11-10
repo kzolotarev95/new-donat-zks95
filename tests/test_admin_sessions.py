@@ -131,6 +131,22 @@ def test_sessions_survive_application_restart(app, client):
         assert get_db().execute("SELECT COUNT(*) FROM admin_sessions").fetchone()[0] == 1
 
 
+def test_remembered_device_has_long_lifetime_and_upgrades_old_active_session(app, client):
+    login(client)
+    lifetime = int(app.permanent_session_lifetime.total_seconds())
+    assert lifetime >= 10 * 365 * 24 * 60 * 60
+    now = int(time.time())
+    with app.app_context():
+        db = get_db()
+        db.execute("UPDATE admin_sessions SET last_seen_at = ?, expires_at = ?", (now, now + 300))
+        db.commit()
+    assert client.get("/admin/").status_code == 200
+    with app.app_context():
+        row = get_db().execute("SELECT last_seen_at, expires_at FROM admin_sessions").fetchone()
+        assert row["last_seen_at"] >= now
+        assert row["expires_at"] >= now + lifetime - 5
+
+
 def test_account_change_preserves_current_history_and_revokes_others(app, client):
     login(client)
     other = app.test_client()
