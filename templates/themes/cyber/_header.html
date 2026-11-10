@@ -1,6 +1,6 @@
 {% from 'themes/cyber/_icons.html' import icon %}
 <header class="site-header cyber-header">
-  <a class="brand" href="{{ url_for('site.index') }}" aria-label="ZKS95 Developer — главная"><span class="brand-mark">Z</span><span>ZK95<span class="brand-muted">DEV</span><span class="brand-period">.</span></span></a>
+  <a class="brand" href="{{ url_for('site.index') }}" aria-label="ZKS95 Developer — главная"><span>ZK95<span class="brand-muted">DEV</span><span class="brand-period">.</span></span></a>
   <div class="cyber-header-actions">
     <button type="button" class="cyber-ambient-toggle" aria-label="Уменьшить свечение и анимацию" title="Уменьшить свечение и анимацию" aria-pressed="false">{{ icon('sun',14) }}{{ icon('moon',13) }}</button>
     <a class="cyber-header-donate" href="{{ url_for('site.donate', _anchor='donate-form') }}">Donate {{ icon('heart',15) }}</a>
