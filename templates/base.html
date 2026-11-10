@@ -16,7 +16,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800{% if site_theme == 'cyber' %}&family=Inter:wght@400;500;600;700;800;900{% endif %}&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-  {% if site_theme == 'cyber' %}<link rel="stylesheet" href="{{ url_for('static', filename='css/cyber.css', v='glass-6') }}"><link rel="stylesheet" href="{{ url_for('static', filename='css/cyber-shared.css', v='1') }}">{% endif %}
+  {% if site_theme == 'cyber' %}<link rel="stylesheet" href="{{ url_for('static', filename='css/cyber.css', v='motion-7') }}"><link rel="stylesheet" href="{{ url_for('static', filename='css/cyber-shared.css', v='1') }}">{% endif %}
   {% block head %}{% endblock %}
 </head>
 <body class="theme-{{ site_theme }} visual-effect-{{ visual_effect }} visual-speed-{{ visual_speed }}">
