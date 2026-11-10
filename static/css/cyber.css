@@ -25,7 +25,13 @@ body.theme-cyber {
 .theme-cyber::before, .theme-cyber::after { content: ''; position: absolute; inset: 0; pointer-events: none; z-index: -2; }
 .theme-cyber::before { background: url('../img/cyber-scene-top.svg?v=2') center top / 100% 568px no-repeat; }
 .theme-cyber::after { background: url('../img/cyber-scene-bottom.svg?v=2') center bottom / 100% 640px no-repeat; }
-.theme-cyber .grain { opacity: .012; }
+/* Avoid a full-screen SVG turbulence overlay over animated content. */
+.theme-cyber .grain { display: none; }
+.theme-cyber.visual-effect-none .visual-layer { display: none; }
+.theme-cyber .visual-layer { contain: strict; }
+.theme-cyber.visual-effect-space .visual-layer { inset: -64px; animation: cyber-space-drift var(--visual-duration) ease-in-out infinite alternate; will-change: transform; }
+.theme-cyber.visual-effect-snow .visual-layer { inset: -250px; background-size: 125px 125px, 250px 250px, 250px 250px; animation: cyber-snow-drift var(--visual-duration) linear infinite; will-change: transform; }
+.theme-cyber.visual-effect-grid .visual-layer { inset: -56px; animation: cyber-grid-drift var(--visual-duration) linear infinite; will-change: transform; }
 .theme-cyber svg { flex-shrink: 0; vertical-align: middle; }
 .theme-cyber a, .theme-cyber button, .theme-cyber input, .theme-cyber textarea { -webkit-tap-highlight-color: transparent; }
 .theme-cyber :focus-visible { outline: 2px solid #bd7cff; outline-offset: 4px; }
@@ -159,8 +165,14 @@ body.theme-cyber {
 }
 .theme-cyber.cyber-calm::before, .theme-cyber.cyber-calm::after { opacity: .4; }
 .theme-cyber.cyber-calm .cyber-art img, .theme-cyber.cyber-calm .cyber-badge i { animation: none; }
+.theme-cyber.cyber-calm .visual-layer, .theme-cyber.cyber-calm .donor-name,
+.theme-cyber .cyber-motion-paused,
+.theme-cyber.cyber-page-hidden *, .theme-cyber.cyber-page-hidden *::before, .theme-cyber.cyber-page-hidden *::after { animation-play-state: paused !important; }
 .theme-cyber.cyber-calm .cyber-feature:hover, .theme-cyber.cyber-calm .cyber-feature:hover .cyber-feature-icon, .theme-cyber.cyber-calm .cyber-benefits li:hover, .theme-cyber.cyber-calm .cyber-benefits li:hover>span:first-child { transform: none; }
-@keyframes cyber-status-pulse { 0%, 100% { opacity: .4; transform: scale(.88); box-shadow: 0 0 5px #00df8c40; } 50% { opacity: 1; transform: scale(1); box-shadow: 0 0 14px #00e491b3, 0 0 0 4px #00e49112; } }
+@keyframes cyber-status-pulse { 0%, 100% { opacity: .4; transform: scale(.88); } 50% { opacity: 1; transform: scale(1); } }
+@keyframes cyber-space-drift { to { transform: translate3d(32px, -32px, 0); } }
+@keyframes cyber-snow-drift { to { transform: translate3d(0, 250px, 0); } }
+@keyframes cyber-grid-drift { to { transform: translate3d(56px, 56px, 0); } }
 @keyframes cyber-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
 @keyframes cyber-spinner { to { transform: rotate(360deg); } }
 @keyframes cyber-reveal { from { opacity: .4; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
@@ -228,10 +240,6 @@ body.theme-cyber {
 .theme-cyber .cyber-donate .amount-input span { color: #c3c8e3 !important; }
 .theme-cyber .cyber-donate .cyber-pay { font-size: 12px !important; }
 
-@media (min-width: 1234px) {
-  .theme-cyber .shell, .theme-cyber .site-header { margin-left: calc((100vw - var(--max)) / 2); margin-right: 0; }
-  .theme-cyber .cyber-donate { transform: translateX(16px); }
-}
 @media (min-width: 761px) and (max-width: 1190px) {
   .theme-cyber .cyber-hero { grid-template-rows: auto auto; row-gap: 0; align-items: start; min-height: 0; }
   .cyber-intro { grid-column: 1; grid-row: 1; }

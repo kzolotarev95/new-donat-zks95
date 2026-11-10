@@ -21,7 +21,20 @@ document.addEventListener('DOMContentLoaded', () => {
   const syncHeader = () => document.body.classList.toggle('is-scrolled', window.scrollY > 12);
   window.addEventListener('scroll', syncHeader, { passive: true });
   syncHeader();
+  // Keep continuous effects asleep outside the viewport and in background tabs.
+  const syncVisibility = () => document.body.classList.toggle('cyber-page-hidden', document.hidden);
+  document.addEventListener('visibilitychange', syncVisibility);
+  syncVisibility();
   if (reduceMotion || !('IntersectionObserver' in window)) return;
+  const motionObserver = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      entry.target.classList.toggle('cyber-motion-paused', !entry.isIntersecting);
+    });
+  });
+  document.querySelectorAll('.cyber-art img, .cyber-badge i, .cyber-donor-copy .donor-name').forEach(node => {
+    node.classList.add('cyber-motion-paused');
+    motionObserver.observe(node);
+  });
   const observer = new IntersectionObserver(entries => {
     entries.forEach(entry => {
       if (entry.isIntersecting) {
