@@ -305,3 +305,7 @@ h2{font-size:clamp(1.55rem,3vw,2.45rem)!important;line-height:1.12;letter-spacin
 .payment-limits-footer .muted{max-width:630px;margin:0;line-height:1.7}.payment-limits-footer .button{flex-shrink:0}
 .donate-form .quick-amounts{grid-template-columns:repeat(var(--quick-amount-count,4),minmax(0,1fr))}
 @media(max-width:760px){.payment-limit-grid{grid-template-columns:minmax(0,1fr);gap:12px}.admin-panel.payment-limits{padding:16px}.payment-limit-control{padding:14px}.payment-limit-number input[type=number]{width:115px}.payment-limits-footer{align-items:stretch;flex-direction:column;gap:14px}.payment-limits-footer .button{width:100%}.payment-limit-heading label{font-size:.72rem}}
+
+/* Short pages must fill the viewport without repeating the ambient gradient. */
+html{min-height:100%;background-color:var(--bg)}
+body{min-height:100vh;min-height:100dvh;background-repeat:no-repeat}

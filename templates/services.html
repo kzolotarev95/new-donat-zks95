@@ -30,11 +30,5 @@
     <p>Платежи за услуги разработки, техническую поддержку и развитие авторских проектов принимает {{ payment_recipient.name }}. Реквизиты и контакт для вопросов о платежах доступны на странице <a href="{{ url_for('site.requisites') }}">«Информация об исполнителе»</a>.</p>
     <a class="button button-gold" href="{{ payment_recipient.contact_url }}" target="_blank" rel="noopener noreferrer">Обсудить задачу в Telegram <span>↗</span></a>
   </article>
-  <article class="recipient-card">
-    <h2>Добровольная поддержка проектов</h2>
-    <p>Если вы хотите поддержать мою работу над авторскими проектами без заказа конкретной услуги, воспользуйтесь страницей Donate. Сумма поддержки выбирается добровольно; этот платёж не является покупкой товара или оплатой согласованной задачи.</p>
-    {% include "_support_recipient.html" %}
-    <a class="button button-ghost" href="{{ url_for('site.donate') }}">Поддержать разработку <span>↗</span></a>
-  </article>
 </section>
 {% endblock %}
