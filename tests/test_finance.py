@@ -20,6 +20,7 @@ from app.finance.operations import (
 from app.finance.banking import import_statement
 from app.finance.analytics import totals, period
 from app.finance.sync import drain, request_sync
+from app.finance.payout_import import parse_transfer
 from app.backup import export_backup, import_backup
 from app.settings import set_runtime_setting
 from tests.test_site_themes import _login
@@ -105,6 +106,99 @@ def test_invalid_money(raw):
 def test_exact_kopecks():
     assert money("1 234,56") == 123456
     assert money("0.01") == 1
+
+
+def test_yookassa_transfer_card_parser_extracts_payout_fields():
+    draft = parse_transfer("""Перевод № 079109197
+Номер платёжного документа
+34738
+Назначение платежа
+//Реестр// Выплата самозанятому. (Комиссия 42,50 руб, в т.ч. НДС 22% - 3,85 руб.)
+Сумма
+1 062,50 ₽
+Дата отправки
+11.11.2026
+""")
+    assert draft == {
+        "external_id": "34738",
+        "date": "2026-11-11",
+        "amount": "1062.50",
+        "fee": "42.50",
+        "source": "ЮKassa: документ №34738, перевод №079109197",
+        "comment": "Из карточки перевода ЮKassa; зачисление в банке проверяется отдельно.",
+    }
+
+
+@pytest.mark.parametrize("raw", [
+    "Перевод № 1\nСумма\n1 000 ₽\nДата отправки\n11.11.2026",
+    "Перевод № 1\nНомер платёжного документа\n1\nСумма\n1 000 USD\nДата отправки\n11.11.2026",
+    "Перевод № 1\nНомер платёжного документа\n1\nСумма\n1 000 ₽\nДата отправки\n11.11.2026\nДата отправки\n12.11.2026",
+])
+def test_yookassa_transfer_parser_rejects_incomplete_or_ambiguous_cards(raw):
+    with pytest.raises(ValueError):
+        parse_transfer(raw)
+
+
+@pytest.mark.parametrize("amount,day", [
+    ("0", "11.11.2026"), ("-1", "11.11.2026"),
+    ("1,001", "11.11.2026"), ("100", "31.02.2026"),
+])
+def test_yookassa_transfer_parser_checks_money_and_date(amount, day):
+    with pytest.raises(ValueError):
+        parse_transfer(f"Номер платёжного документа 100 Сумма {amount} ₽ Дата отправки {day}")
+
+
+def test_transfer_import_preview_and_save_are_separate(app, client):
+    raw = """Перевод № 123456789
+Номер платёжного документа: 55555
+Сумма: 1\u202f062,50 ₽
+Дата отправки: 2026-11-11
+Получатель: Не сохранять имя
+Счёт: 99999999999999999999
+"""
+    draft = parse_transfer(raw)
+    assert draft["fee"] == ""  # Unknown fee must never become zero.
+    assert client.post("/admin/finance/payouts/parse", data={"transfer_text":raw}).status_code == 400
+    with client.session_transaction() as session:
+        session["_csrf_token"] = "anonymous"
+    assert client.post("/admin/finance/payouts/parse", data={"transfer_text":raw,"csrf_token":"anonymous"}).status_code == 302
+    token = _login(client)
+    assert client.post("/admin/finance/payouts/parse", data={"transfer_text":raw}).status_code == 400
+    for theme in ("classic", "cyber"):
+        with app.app_context():
+            set_runtime_setting("SITE_THEME", theme)
+        response = client.post("/admin/finance/payouts/parse", data={"transfer_text":raw,"csrf_token":token})
+        html = response.get_data(as_text=True)
+        assert response.status_code == 200
+        assert 'name="amount" value="1062.50"' in html
+        assert 'name="date" value="2026-11-11"' in html
+        assert 'name="fee" value=""' in html
+        assert '99999999999999999999' not in html
+        assert 'Не сохранять имя' not in html
+        assert "no-store" in response.headers["Cache-Control"]
+        with app.app_context():
+            assert get_db().execute("SELECT COUNT(*) FROM finance_payouts").fetchone()[0] == 0
+    client.post("/admin/finance/payouts", data={**draft,"csrf_token":token})
+    with app.app_context():
+        payout = get_db().execute("SELECT * FROM finance_payouts").fetchone()
+        assert payout["external_id"] == "55555"
+        assert payout["status"] == "expected" and payout["bank_id"] is None
+        assert payout["amount"] == 106250 and payout["fee"] is None
+        before = dict(payout)
+    response = client.post("/admin/finance/payouts/parse", data={"transfer_text":raw,"csrf_token":token})
+    assert "Повторная запись не создана" in response.get_data(as_text=True)
+    with app.app_context():
+        assert dict(get_db().execute("SELECT * FROM finance_payouts").fetchone()) == before
+        assert get_db().execute("SELECT COUNT(*) FROM finance_payouts").fetchone()[0] == 1
+
+
+@pytest.mark.parametrize("raw", ["x" * 20001, "Номер платёжного документа 1 Сумма 1 ₽ Дата отправки 11.11.2026 Отклонён"])
+def test_transfer_import_invalid_text_never_writes_payout(app, client, raw):
+    token = _login(client)
+    response = client.post("/admin/finance/payouts/parse", data={"transfer_text":raw,"csrf_token":token})
+    assert response.status_code == 302
+    with app.app_context():
+        assert get_db().execute("SELECT COUNT(*) FROM finance_payouts").fetchone()[0] == 0
 
 
 @pytest.mark.parametrize(

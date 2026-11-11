@@ -1,6 +1,36 @@
 {% extends 'admin/finance/base.html' %}
 {% from 'admin/finance/_macros.html' import csrf,field,confirm,pagination with context %}
 {% block finance_content %}
+<section class="admin-panel finance-payout-import">
+  <h2>Импорт перевода из ЮKassa</h2>
+  <p class="muted">Откройте перевод в <a href="https://yookassa.ru/my/finance" target="_blank" rel="noopener noreferrer">Финансах ЮKassa ↗</a>, скопируйте его карточку целиком и вставьте сюда. Номер документа, дата, сумма и комиссия заполнятся автоматически.</p>
+  <form class="finance-form" method="post" action="{{ url_for('admin.finance.payout_parse') }}">
+    {{ csrf() }}
+    <label>Текст карточки перевода<textarea name="transfer_text" rows="5" maxlength="20000" required placeholder="Перевод № …&#10;Номер платёжного документа …&#10;Сумма …&#10;Дата отправки …"></textarea></label>
+    <button class="button button-gold" type="submit">Проверить и заполнить</button>
+  </form>
+  <p class="finance-note">Платежи и комиссии загружаются через <a href="{{ url_for('admin.finance.dashboard') }}">синхронизацию ЮKassa</a>. Переводы на ваш счёт пока импортируются из карточки. Банковское зачисление подтвердите отдельно по выписке.</p>
+</section>
+{% if payout_draft %}
+<section class="admin-panel" id="payout-preview">
+  <h2>Проверьте данные перевода</h2>
+  {% if payout_duplicate %}
+  <p class="finance-note">Выплата {{ payout_duplicate.external_id }} уже существует. {% if payout_duplicate.status=='canceled' %}Восстановите её в карточке ниже.{% else %}Откройте существующую запись для проверки или редактирования.{% endif %} Повторная запись не создана.</p>
+  {% else %}
+  <p class="muted">Проверьте поля по документу ЮKassa. Пустая комиссия означает, что она не найдена; её можно заполнить вручную. Сохраняются только поля ниже, без исходного текста и банковских реквизитов.</p>
+  <form class="finance-form" method="post" action="{{ url_for('admin.finance.payout_create') }}">
+    {{ csrf() }}
+    {{ field('external_id','ID выплаты / реестра','text',payout_draft.external_id) }}
+    {{ field('date','Ожидаемая дата','date',payout_draft.date) }}
+    {{ field('amount','К зачислению, ₽','number',payout_draft.amount) }}
+    {{ field('fee','Комиссия из реестра, ₽','number',payout_draft.fee,false) }}
+    {{ field('source','Источник / документ','text',payout_draft.source) }}
+    {{ field('comment','Комментарий','text',payout_draft.comment,false) }}
+    <button class="button button-gold" type="submit">Добавить ожидаемую выплату</button>
+  </form>
+  {% endif %}
+</section>
+{% endif %}
 <details class="admin-panel"><summary>Добавить выплату из отчёта ЮKassa</summary><form class="finance-form" method="post" action="{{ url_for('admin.finance.payout_create') }}">{{ csrf() }}{{ field('external_id','ID выплаты / реестра') }}{{ field('date','Ожидаемая дата','date') }}{{ field('amount','К зачислению, ₽','number') }}{{ field('fee','Комиссия из реестра, ₽','number','',false) }}{{ field('source','Источник / документ') }}{{ field('comment','Комментарий','text','',false) }}<button class="button button-gold">Добавить ожидаемую выплату</button></form></details>
 <details class="admin-panel"><summary>Как учесть выплату: 3 шага</summary><ol class="finance-help"><li>Добавьте выплату по документу ЮKassa: номер, дату отправки, сумму к зачислению и комиссию.</li><li>Когда деньги поступят, в разделе <a href="{{ url_for('admin.finance.bank') }}">Банк</a> добавьте операцию по справке или импортируйте выписку. Если деньги уже пришли, ждать не нужно.</li><li>Здесь откройте карточку выплаты → «Подтвердить банковское поступление». Укажите внутренний номер № операции из раздела «Банк», проверьте получателя и плательщика по документам и подтвердите. Совпадение суммы само по себе не доказывает связь.</li></ol><p class="muted">Подтверждение покажет сумму в «Подтверждено банком». Повторный доход от этой же выплаты не начисляется. Отменённую запись восстановите в её карточке; повторно добавлять её номер не нужно.</p></details>
 <p class="finance-note">Запись из отчёта не подтверждает банковское зачисление. Подтвердите поступление по выписке; равенство сумм — лишь подсказка для сверки.</p>

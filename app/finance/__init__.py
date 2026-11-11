@@ -26,6 +26,7 @@ from .ledger import (
 )
 from .banking import import_statement, add_operation, normalize, MAX_BYTES
 from .sync import request_sync
+from .payout_import import parse_transfer
 from ..security import admin_required
 from ..settings import set_runtime_settings, get_runtime_setting
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
@@ -217,6 +218,32 @@ def payouts():
     page, pages = page_bounds(total)
     rows = operations.reconcile(limit=15, offset=(page - 1) * 15, include_canceled=True)
     return render("payouts", rows=rows, page=page, pages=pages, total=total)
+
+
+@finance_bp.post("/payouts/parse")
+def payout_parse():
+    try:
+        draft = parse_transfer(request.form.get("transfer_text", ""))
+    except ValueError as exc:
+        flash(str(exc), "error")
+        return redirect(url_for("admin.finance.payouts"))
+    # A preview never inserts a payout or confirms money received. Submit the
+    # ordinary audited create form only after the owner checks the parsed fields.
+    total = get_db().execute("SELECT COUNT(*) FROM finance_payouts").fetchone()[0]
+    duplicate = get_db().execute(
+        "SELECT id,external_id,status,expected_at FROM finance_payouts WHERE external_id=?",
+        (draft["external_id"],),
+    ).fetchone()
+    page = 1
+    if duplicate:
+        ahead = get_db().execute(
+            "SELECT COUNT(*) FROM finance_payouts WHERE expected_at>? OR (expected_at=? AND id>?)",
+            (duplicate["expected_at"], duplicate["expected_at"], duplicate["id"]),
+        ).fetchone()[0]
+        page = ahead // 15 + 1
+    rows = operations.reconcile(limit=15, offset=(page - 1) * 15, include_canceled=True)
+    return render("payouts", rows=rows, page=page, pages=max(1, math.ceil(total / 15)),
+                  total=total, payout_draft=draft, payout_duplicate=duplicate)
 
 
 @finance_bp.get("/bank")
