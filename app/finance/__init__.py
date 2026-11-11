@@ -47,6 +47,8 @@ def authorize():
 def context():
     return {
         "rub": format_money,
+        "finance_input_money": lambda value: "" if value is None else format_money(value).replace(" ", ""),
+        "finance_input_date": analytics.local_date,
         "receipt_statuses": RECEIPT_STATUSES,
         "periods": analytics.PERIODS,
         "finance_sync": dict(
@@ -408,6 +410,21 @@ def payout_create():
     )
 
 
+@finance_bp.post("/payouts/<int:payout_id>/edit")
+def payout_edit(payout_id):
+    return mutate(
+        lambda: operations.edit_payout(payout_id, request.form), "admin.finance.payouts"
+    )
+
+
+@finance_bp.post("/payouts/<int:payout_id>/restore")
+def payout_restore(payout_id):
+    return mutate(
+        lambda: operations.restore_payout(payout_id, request.form.get("confirm")),
+        "admin.finance.payouts",
+    )
+
+
 @finance_bp.post("/payouts/<int:payout_id>/confirm")
 def payout_confirm(payout_id):
     def action():
@@ -455,6 +472,7 @@ def payout_cancel(payout_id):
     def action():
         db = get_db()
         with db:
+            db.execute("BEGIN IMMEDIATE")
             row = db.execute(
                 "SELECT * FROM finance_payouts WHERE id=?", (payout_id,)
             ).fetchone()

@@ -4,3 +4,5 @@
 @media(max-width:760px){.finance-shell .admin-title{display:block}.finance-zone{display:block;margin-top:10px}.finance-kpis{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.finance-kpi{padding:13px}.finance-chart-grid,.finance-two{grid-template-columns:1fr}.finance-shell .admin-panel{padding:16px}.finance-shell input,.finance-shell select{font-size:16px}.finance-filter-fields{grid-template-columns:1fr}.finance-details{grid-template-columns:110px minmax(0,1fr)}.finance-form .button{width:100%}}
 
 .finance-two{align-items:start}
+
+.finance-help{margin:12px 0;padding-left:20px;color:var(--muted)}.finance-help li+li{margin-top:8px}

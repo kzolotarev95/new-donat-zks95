@@ -10,7 +10,9 @@ from app.finance.ledger import upsert_transaction, money, income_rows
 from app.finance.operations import (
     create_payout,
     confirm_payout,
+    edit_payout,
     link_payment,
+    restore_payout,
     save_receipt,
     classify_bank,
     reconcile,
@@ -643,6 +645,32 @@ def test_finance_http_mutations_and_audit(app, client):
     assert client.get("/admin/finance/bank?q=" + "x" * 201).status_code == 400
 
 
+def test_canceled_payout_can_be_restored_and_edited(app):
+    with app.app_context():
+        payout_id = create_payout(payout_data())
+        db = get_db()
+        with db:
+            db.execute(
+                "UPDATE finance_payouts SET status='canceled' WHERE id=?", (payout_id,)
+            )
+        restore_payout(payout_id, "1")
+        edit_payout(
+            payout_id,
+            {
+                **payout_data(),
+                "external_id": "settlement-updated",
+                "amount": "1062.50",
+                "fee": "42.50",
+            },
+        )
+        row = db.execute("SELECT * FROM finance_payouts WHERE id=?", (payout_id,)).fetchone()
+        assert row["status"] == "expected"
+        assert row["external_id"] == "settlement-updated"
+        assert row["amount"] == 106250 and row["fee"] == 4250
+        actions = [r["action"] for r in db.execute("SELECT action FROM finance_audit_log ORDER BY id")]
+        assert "payout_restored" in actions and "payout_updated" in actions
+
+
 def test_aggregation_uses_bounded_queries(app):
     for i in range(30):
         seed(app, payment("query-check-" + str(i)))
@@ -708,3 +736,98 @@ def test_yookassa_test_payments_are_not_real_income(app):
             get_db().execute("SELECT is_test FROM finance_transactions").fetchone()[0]
             == 1
         )
+
+
+def test_payout_restore_edit_http_lifecycle(app, client):
+    seed(app)
+    bid = bank_row(app, amount="1062.50")
+    with app.app_context():
+        pid = create_payout(payout_data(amount="1062.50", fee=""))
+    for action in ("edit", "restore"):
+        assert client.post(f"/admin/finance/payouts/{pid}/{action}").status_code in (302, 400)
+    _login(client)
+    with client.session_transaction() as session:
+        token = session["_csrf_token"]
+    for action in ("edit", "restore"):
+        assert client.post(f"/admin/finance/payouts/{pid}/{action}").status_code == 400
+    for theme in ("cyber", "classic"):
+        with app.app_context():
+            set_runtime_setting("SITE_THEME", theme)
+        html = client.get("/admin/finance/payouts").get_data(as_text=True)
+        # Browser number inputs must not receive thousands separators or a dash;
+        # local date must survive an edit of midnight stored in UTC (previous day).
+        from html.parser import HTMLParser
+
+        class FormValues(HTMLParser):
+            def __init__(self):
+                super().__init__()
+                self.editing = False
+                self.values = {}
+
+            def handle_starttag(self, tag, attrs):
+                attrs = dict(attrs)
+                if tag == "form":
+                    self.editing = attrs.get("action") == f"/admin/finance/payouts/{pid}/edit"
+                if tag == "input" and self.editing:
+                    self.values[attrs.get("name")] = attrs.get("value")
+
+            def handle_endtag(self, tag):
+                if tag == "form":
+                    self.editing = False
+
+        form = FormValues()
+        form.feed(html)
+        assert form.values["date"] == "2026-11-11"
+        assert form.values["amount"] == "1062.50"
+        assert form.values["fee"] == ""
+    client.post(f"/admin/finance/payouts/{pid}/cancel", data={
+        "csrf_token": token, "confirm": "1", "comment": "Mistaken cancellation"})
+    response = client.post("/admin/finance/payouts", data={
+        **payout_data(), "csrf_token": token}, follow_redirects=True)
+    assert "Откройте её карточку" in response.get_data(as_text=True)
+    client.post(f"/admin/finance/payouts/{pid}/restore", data={"csrf_token": token})
+    with app.app_context():
+        assert get_db().execute("SELECT status FROM finance_payouts WHERE id=?", (pid,)).fetchone()[0] == "canceled"
+    client.post(f"/admin/finance/payouts/{pid}/restore", data={"csrf_token": token, "confirm": "1"})
+    client.post(f"/admin/finance/payouts/{pid}/edit", data={
+        **payout_data(amount="1062.50", fee="42.50"), "csrf_token": token})
+    with app.app_context():
+        db = get_db()
+        assert db.execute("SELECT COUNT(*) FROM finance_payouts").fetchone()[0] == 1
+        assert db.execute("SELECT amount,fee FROM finance_payouts WHERE id=?", (pid,)).fetchone()[:] == (106250, 4250)
+        classify_bank(bid, "excluded", "Mistake", "1")
+    response = client.post(f"/admin/finance/payouts/{pid}/confirm", data={
+        "csrf_token": token, "bank_id": bid, "comment": "Checked", "confirm": "1"}, follow_redirects=True)
+    assert "Не разобрано" in response.get_data(as_text=True)
+    client.post(f"/admin/finance/bank/{bid}/classify", data={
+        "csrf_token": token, "kind": "unclassified", "comment": "Restore to reconciliation", "confirm": "1"})
+    client.post(f"/admin/finance/payouts/{pid}/confirm", data={
+        "csrf_token": token, "bank_id": bid, "comment": "Checked bank document", "confirm": "1"})
+    with app.app_context():
+        db = get_db()
+        assert totals(period({}))["metrics"]["paid_out"] == 106250
+        before = dict(db.execute("SELECT * FROM finance_payouts WHERE id=?", (pid,)).fetchone())
+        assert before["status"] == "confirmed" and before["bank_id"] == bid
+        for action in (lambda: edit_payout(pid, payout_data()), lambda: restore_payout(pid, "1")):
+            with pytest.raises(ValueError):
+                action()
+        assert dict(db.execute("SELECT * FROM finance_payouts WHERE id=?", (pid,)).fetchone()) == before
+        assert db.execute("SELECT COUNT(*) FROM finance_audit_log WHERE action='payout_restored'").fetchone()[0] == 1
+
+
+def test_payout_edit_validation_and_linked_protection(app):
+    seed(app)
+    with app.app_context():
+        pid = create_payout(payout_data())
+        create_payout(payout_data(external_id="other"))
+        db = get_db()
+        before = dict(db.execute("SELECT * FROM finance_payouts WHERE id=?", (pid,)).fetchone())
+        for changes in ({"amount": "0"}, {"fee": "-1"}, {"date": "invalid"}, {"source": ""}, {"external_id": "other"}):
+            with pytest.raises(ValueError):
+                edit_payout(pid, payout_data(**changes))
+            assert dict(db.execute("SELECT * FROM finance_payouts WHERE id=?", (pid,)).fetchone()) == before
+        link_payment(pid, "payment-1")
+        with pytest.raises(ValueError, match="связи"):
+            edit_payout(pid, payout_data(amount="900"))
+        assert db.execute("SELECT amount FROM finance_payouts WHERE id=?", (pid,)).fetchone()[0] == before["amount"]
+        assert db.execute("SELECT COUNT(*) FROM finance_reconciliation WHERE payout_id=?", (pid,)).fetchone()[0] == 1

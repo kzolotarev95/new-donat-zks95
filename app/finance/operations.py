@@ -62,13 +62,28 @@ def create_payout(data):
     fee = money(data.get("fee"), optional=True)
     if not amount:
         raise ValueError("Сумма выплаты должна быть положительной.")
+    external_id = text(data.get("external_id"), 200, True)
     db = get_db()
     with db:
+        db.execute("BEGIN IMMEDIATE")
+        duplicate = db.execute(
+            "SELECT status FROM finance_payouts WHERE external_id=?", (external_id,)
+        ).fetchone()
+        if duplicate:
+            if duplicate["status"] == "canceled":
+                raise ValueError(
+                    f"Выплата {external_id} уже есть среди отменённых. "
+                    "Откройте её карточку и нажмите «Восстановить выплату»."
+                )
+            raise ValueError(
+                f"Выплата {external_id} уже существует. Откройте её карточку; "
+                "ожидаемую выплату можно изменить без повторного добавления."
+            )
         cursor = db.execute(
             """INSERT INTO finance_payouts(external_id,expected_at,amount,fee,currency,source,comment,created_at)
           VALUES(?,?,?,?,?,?,?,?)""",
             (
-                text(data.get("external_id"), 200, True),
+                external_id,
                 timestamp(data.get("date")),
                 amount,
                 fee,
@@ -90,6 +105,68 @@ def create_payout(data):
             ),
         )
     return cursor.lastrowid
+
+
+def edit_payout(payout_id, data):
+    """Edit an expected payout while preserving its audit trail."""
+    amount = money(data.get("amount"))
+    fee = money(data.get("fee"), optional=True)
+    if not amount:
+        raise ValueError("Сумма выплаты должна быть положительной.")
+    external_id = text(data.get("external_id"), 200, True)
+    expected_at = timestamp(data.get("date"))
+    source = text(data.get("source"), 120, True)
+    comment = text(data.get("comment"), 1000)
+    db = get_db()
+    with db:
+        db.execute("BEGIN IMMEDIATE")
+        row = db.execute(
+            "SELECT * FROM finance_payouts WHERE id=?", (payout_id,)
+        ).fetchone()
+        if not row or row["status"] != "expected":
+            raise ValueError("Редактировать можно только ожидаемую выплату.")
+        if db.execute(
+            "SELECT 1 FROM finance_reconciliation WHERE payout_id=? LIMIT 1",
+            (payout_id,),
+        ).fetchone():
+            raise ValueError("Сначала уберите связи платежей перед изменением выплаты.")
+        duplicate = db.execute(
+            "SELECT 1 FROM finance_payouts WHERE external_id=? AND id!=?",
+            (external_id, payout_id),
+        ).fetchone()
+        if duplicate:
+            raise ValueError("Выплата с таким ID уже существует.")
+        db.execute(
+            """UPDATE finance_payouts SET external_id=?,expected_at=?,amount=?,fee=?,source=?,comment=?
+          WHERE id=?""",
+            (external_id, expected_at, amount, fee, source, comment, payout_id),
+        )
+        after = dict(
+            db.execute("SELECT * FROM finance_payouts WHERE id=?", (payout_id,)).fetchone()
+        )
+        audit(db, "payout_updated", f"payout:{payout_id}", dict(row), after)
+
+
+def restore_payout(payout_id, confirmed):
+    """Re-open a canceled payout so its original ID can be reconciled again."""
+    if confirmed != "1":
+        raise ValueError("Подтвердите восстановление отменённой выплаты.")
+    db = get_db()
+    with db:
+        db.execute("BEGIN IMMEDIATE")
+        row = db.execute(
+            "SELECT * FROM finance_payouts WHERE id=?", (payout_id,)
+        ).fetchone()
+        if not row or row["status"] != "canceled":
+            raise ValueError("Восстановить можно только отменённую выплату.")
+        db.execute(
+            "UPDATE finance_payouts SET status='expected',bank_id=NULL,credited_at=NULL WHERE id=?",
+            (payout_id,),
+        )
+        after = dict(
+            db.execute("SELECT * FROM finance_payouts WHERE id=?", (payout_id,)).fetchone()
+        )
+        audit(db, "payout_restored", f"payout:{payout_id}", dict(row), after)
 
 
 def link_payment(payout_id, payment_id):
@@ -138,6 +215,7 @@ def confirm_payout(payout_id, bank_id, comment, confirmed):
         raise ValueError("Подтвердите фактическое банковское поступление.")
     db = get_db()
     with db:
+        db.execute("BEGIN IMMEDIATE")
         p = db.execute(
             "SELECT * FROM finance_payouts WHERE id=?", (payout_id,)
         ).fetchone()
@@ -149,7 +227,10 @@ def confirm_payout(payout_id, bank_id, comment, confirmed):
         if p["currency"] != b["currency"] or p["amount"] != b["amount"]:
             raise ValueError("Сумма или валюта не совпадает; проверьте расхождение.")
         if b["kind"] not in ("unclassified", "settlement"):
-            raise ValueError("Операция уже учтена как отдельный доход или исключена.")
+            raise ValueError(
+                "Банковская операция исключена или учтена как отдельный доход. "
+                "В разделе «Банк» проверьте её и измените категорию на «Не разобрано»."
+            )
         db.execute(
             "UPDATE finance_payouts SET status='confirmed',bank_id=?,credited_at=?,comment=? WHERE id=?",
             (bank_id, b["booked_at"], text(comment, 1000, True), payout_id),
