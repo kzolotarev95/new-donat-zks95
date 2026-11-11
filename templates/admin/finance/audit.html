@@ -1,0 +1,4 @@
+{% extends 'admin/finance/base.html' %}
+{% from 'admin/finance/_macros.html' import pagination with context %}
+{% block finance_content %}<section class="admin-panel"><h2>Журнал финансовых действий</h2><p class="finance-note">Изменения записываются вместе с операцией. Редактирование и удаление журнала через панель недоступно.</p>{% for row in rows %}<details><summary>{{ row.created_at|finance_date }} · {{ row.actor }} · {{ row.action }} · {{ row.entity }}</summary><pre class="payload">Было: {{ row.before_json }}
+Стало: {{ row.after_json }}</pre></details>{% else %}<p>Операций пока нет.</p>{% endfor %}{{ pagination(page,pages,total) }}</section>{% endblock %}

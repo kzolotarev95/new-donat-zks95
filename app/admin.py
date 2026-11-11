@@ -30,6 +30,8 @@ from .https_reserve import SETTING as HTTPS_RESERVE_SETTING, reserve_status
 
 log = logging.getLogger(__name__)
 admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
+from .finance import finance_bp
+admin_bp.register_blueprint(finance_bp)
 
 
 @admin_bp.app_context_processor

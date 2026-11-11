@@ -1,0 +1,21 @@
+[Unit]
+Description=Synchronize ZKS95 financial ledger from YooKassa
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=zks95
+Group=zks95
+WorkingDirectory=/opt/new-donat-zks95
+EnvironmentFile=/etc/new-donat-zks95/.env
+ExecStart=/opt/new-donat-zks95/.venv/bin/python /opt/new-donat-zks95/scripts/sync_finance.py
+TimeoutStartSec=280
+Nice=10
+CPUQuota=25%
+MemoryMax=192M
+PrivateTmp=true
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/new-donat-zks95

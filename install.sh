@@ -132,6 +132,7 @@ for _ in {1..20}; do if curl --fail --silent --show-error "http://127.0.0.1:${AP
 if [[ "${HEALTH_OK}" -ne 1 ]]; then systemctl status "${SERVICE_NAME}" --no-pager || true; journalctl -u "${SERVICE_NAME}" -n 50 --no-pager || true; fatal "Приложение не ответило на health check."; fi
 ss -lnt | grep -q ":${APP_PORT}[[:space:]]" || fatal "Порт ${APP_PORT} не слушается."; systemctl is-enabled "${SERVICE_NAME}" >/dev/null || fatal "Сервис не включён в автозапуск."
 systemctl enable --now "${APP_NAME}-https-reserve.timer"
+systemctl enable --now "${APP_NAME}-finance.timer"
 cat <<EOF
 
 Установка завершена.

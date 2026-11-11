@@ -155,6 +155,8 @@ def init_db():
     if "pinned" not in donor_columns:
         db.execute("ALTER TABLE donors ADD COLUMN pinned INTEGER NOT NULL DEFAULT 0")
     db.commit()
+    from .finance.schema import migrate
+    migrate(db)
     _ensure_admin_from_env()
 
 
@@ -185,6 +187,8 @@ def create_payment_record(payment):
             json.dumps(payment.get("payload", {}), ensure_ascii=False), now, now,
         ),
     )
+    from .finance.ledger import mirror_payment
+    mirror_payment(db, dict(db.execute("SELECT * FROM payments WHERE payment_id=?", (payment["payment_id"],)).fetchone()))
     db.commit()
 
 
@@ -206,6 +210,10 @@ def update_payment(payment_id, status, payload=None, paid=False):
         CASE WHEN ? THEN COALESCE(paid_at, ?) ELSE paid_at END WHERE payment_id = ?""",
         (status, json.dumps(payload or {}, ensure_ascii=False), now, paid, now, payment_id),
     )
+    from .finance.ledger import mirror_payment
+    row = get_payment(payment_id)
+    if row:
+        mirror_payment(db, dict(row))
     db.commit()
 
 

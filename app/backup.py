@@ -1,9 +1,11 @@
 """Portable, authenticated JSON backups for the admin panel."""
 from datetime import datetime, timezone
+import sqlite3
 
 from .db import get_db
 from .security import encrypt_value, decrypt_value
 from .settings import SECRET_KEYS
+from .finance.schema import TABLES as FINANCE_TABLES
 
 FORMAT = "zks95-backup"
 VERSION = 1
@@ -26,6 +28,18 @@ def _settings():
 
 
 def export_backup(kind):
+    db = get_db()
+    snapshot = not db.in_transaction
+    if snapshot:
+        db.execute('BEGIN')
+    try:
+        return _export_backup(kind)
+    finally:
+        if snapshot:
+            db.rollback()  # Release the consistent read snapshot; no data was changed.
+
+
+def _export_backup(kind):
     if kind == "donors":
         return {
             "format": FORMAT,
@@ -47,6 +61,7 @@ def export_backup(kind):
             "payments": _rows("payments"),
             "donors": _rows("donors"),
             "push_subscriptions": _rows("push_subscriptions"),
+            **{table: _rows(table) for table in FINANCE_TABLES},
         },
     }
 
@@ -153,6 +168,13 @@ def import_backup(payload, replace_donors=False):
         raise ValueError("Неполные данные полного бэкапа")
     try:
         db.execute("BEGIN")
+        import time
+        if db.execute('SELECT lease_until FROM finance_sync WHERE id=1').fetchone()[0] > time.time():
+            raise ValueError('Дождитесь завершения фоновой синхронизации перед восстановлением.')
+        for table in reversed(FINANCE_TABLES):
+            db.execute(f"DELETE FROM {table}")
+        db.execute("DELETE FROM finance_cache")
+        db.execute("UPDATE finance_sync SET requested=0,lease_until=0,token='',cursor='',since_at='',stage='payments',last_success='',last_attempt='',retry_at=0,last_error=''")
         db.execute("DELETE FROM payments")
         db.execute("DELETE FROM donors")
         db.execute("DELETE FROM push_subscriptions")
@@ -160,6 +182,43 @@ def import_backup(payload, replace_donors=False):
         _insert_payments(db, tables.get("payments") or [])
         _insert_donors(db, tables.get("donors") or [])
         _insert_subscriptions(db, tables.get("push_subscriptions") or [])
+        if 'finance_transactions' in tables:
+            for table in FINANCE_TABLES:
+                rows = tables.get(table) or []
+                if not isinstance(rows, list) or len(rows)>100000:
+                    raise ValueError('Некорректные финансовые таблицы в бэкапе')
+                columns = [r['name'] for r in db.execute(f'PRAGMA table_info({table})')]
+                for row in rows:
+                    if not isinstance(row, dict) or set(row) != set(columns):
+                        raise ValueError('Некорректные поля финансовой записи')
+                    from .finance.ledger import receipt_url, timestamp
+                    for name, value in row.items():
+                        if name in ('amount','fee','refunded') and value is not None:
+                            if type(value) is not int or not 0 <= value <= 10000000000000:
+                                raise ValueError('Некорректная финансовая сумма в бэкапе')
+                        if name.endswith('_at') and value:
+                            timestamp(value)
+                    if table == 'finance_receipts':
+                        receipt_url(row['receipt_url'])
+                        if row['receipt_date']:
+                            datetime.strptime(row['receipt_date'],'%Y-%m-%d')
+                        if row['status'] in ('issued','verified') and (not row['receipt_number'] or not row['receipt_date']):
+                            raise ValueError('В оформленном чеке отсутствует номер или дата')
+                    if table == 'finance_transactions':
+                        if row['refunded']>row['amount'] or (row['fee'] is not None and row['fee']>row['amount']):
+                            raise ValueError('Комиссия или возврат превышает сумму платежа')
+                        if row['status'] not in ('pending','waiting_for_capture','succeeded','canceled'):
+                            raise ValueError('Некорректный статус платежа')
+                    placeholders = ','.join('?' for _ in columns)
+                    db.execute(f"INSERT INTO {table} ({','.join(columns)}) VALUES ({placeholders})", [row[c] for c in columns])
+            mismatch = db.execute('''SELECT 1 FROM finance_payouts p LEFT JOIN finance_bank_operations b ON b.id=p.bank_id
+              WHERE p.status='confirmed' AND (b.id IS NULL OR b.amount!=p.amount OR b.currency!=p.currency OR b.kind!='settlement') LIMIT 1''').fetchone()
+            if mismatch:
+                raise ValueError('Подтверждённые выплаты в бэкапе не соответствуют банковским операциям')
+        else:
+            from .finance.ledger import mirror_payment
+            for row in db.execute('SELECT * FROM payments'):
+                mirror_payment(db, dict(row))
         for setting in settings:
             key = _text(setting.get("key"), 120)
             if not key:
@@ -170,7 +229,12 @@ def import_backup(payload, replace_donors=False):
                 "INSERT INTO app_settings(key, value, is_secret, updated_at) VALUES (?, ?, ?, ?)",
                 (key, stored, int(key in SECRET_KEYS), _now()),
             )
+        from .finance.ledger import audit
+        audit(db,'full_backup_restored','backup',{}, {'finance_transactions':db.execute('SELECT COUNT(*) FROM finance_transactions').fetchone()[0]})
         db.commit()
+    except sqlite3.DatabaseError as exc:
+        db.rollback()
+        raise ValueError('Не удалось восстановить финансовые данные. Проверьте целостность бэкапа и повторите попытку.') from exc
     except Exception:
         db.rollback()
         raise

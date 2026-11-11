@@ -1,0 +1,13 @@
+{% extends 'admin/base.html' %}
+{% block head %}<link rel="stylesheet" href="{{ url_for('static',filename='css/finance.css',v='1') }}">{% endblock %}
+{% block title %}Финансовая панель — ZKS95 Admin{% endblock %}
+{% block content %}
+<div class="finance-shell">
+<div class="admin-title"><div><p class="eyebrow">ZKS95 / Finance</p><h1>Финансовая панель</h1></div><span class="finance-zone">{{ finance_timezone }} · RUB</span></div>
+<nav class="finance-tabs" aria-label="Финансы">
+{% for view,label in [('dashboard','Обзор'),('payments','Платежи'),('payouts','Выплаты'),('bank','Банк'),('receipts','Чеки НПД'),('reconciliation','Сверка'),('audit','Аудит')] %}<a href="{{ url_for('admin.finance.' ~ ('audit_log' if view=='audit' else view)) }}"{% if finance_tab==view %} aria-current="page"{% endif %}>{{ label }}</a>{% endfor %}
+</nav>
+{% block finance_content %}{% endblock %}
+</div>
+{% endblock %}
+{% block scripts %}<script src="{{ url_for('static',filename='js/finance.js',v='1') }}" defer></script>{% endblock %}

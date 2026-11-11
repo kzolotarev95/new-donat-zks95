@@ -12,7 +12,7 @@ flock -n 9 || fatal "Другая установка, проверка или о
 git config --global --add safe.directory "${APP_DIR}" 2>/dev/null || true
 mkdir -p "${BACKUP_DIR}"; chmod 700 "${BACKUP_DIR}"
 STAMP="$(date +%Y%m%d-%H%M%S)"; BACKUP="${BACKUP_DIR}/update-${STAMP}"; mkdir -p "${BACKUP}"
-cp -a "${DATA_DIR}/site.db" "${BACKUP}/site.db" 2>/dev/null || true
+if [[ -f "${DATA_DIR}/site.db" ]]; then sqlite3 "${DATA_DIR}/site.db" ".backup '${BACKUP}/site.db'" || fatal "Не удалось сохранить SQLite перед обновлением."; fi
 cp -a "${ETC_DIR}/.env" "${BACKUP}/.env" 2>/dev/null || true
 chmod 0600 "${BACKUP}/.env" 2>/dev/null || true
 cd "${APP_DIR}"
@@ -81,4 +81,5 @@ if [[ -f "${APP_DIR}/config/systemd/${APP_NAME}-login-push.timer" ]]; then
   systemctl enable --now "${APP_NAME}-login-push.timer"
 fi
 systemctl enable --now "${APP_NAME}-https-reserve.timer"
+systemctl enable --now "${APP_NAME}-finance.timer"
 log "Готово. Сервис слушает 127.0.0.1:${APP_PORT}; бэкап: ${BACKUP}"
