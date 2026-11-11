@@ -109,6 +109,8 @@ h2{font-size:clamp(1.55rem,3vw,2.45rem)!important;line-height:1.12;letter-spacin
 @media(max-width:760px){.push-device-actions{display:grid;grid-template-columns:1fr}.push-device-actions .button{width:100%}.push-settings-form .push-check{align-items:flex-start}.push-settings-form .push-check input{margin-top:3px}}
 .push-device-actions [data-push-disable],.push-inline-form .button-ghost{color:var(--gold)!important;border-color:rgba(225,6,32,.55);background:rgba(225,6,32,.08)}.push-device-actions [data-push-disable]:hover,.push-inline-form .button-ghost:hover{color:#fff!important;background:var(--gold);border-color:var(--gold)}
 .admin-nav a,.admin-nav button{font-size:.72rem}
+/* Keep navigation icons aligned with their labels in both admin themes. */
+.admin-header{gap:16px}.admin-header>.brand{flex-shrink:0}.admin-nav{min-width:0;max-width:100%;overflow-x:auto}.admin-nav a,.admin-nav button{display:inline-flex;align-items:center;gap:6px;flex-shrink:0;white-space:nowrap}.admin-nav form{display:flex;flex-shrink:0;margin:0}.admin-nav-icon{display:inline-flex;align-items:center;justify-content:center;flex:0 0 1em;width:1em;font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif;font-size:.85rem;line-height:1}
 @media(max-width:760px){.admin-nav{gap:5px}.admin-nav a,.admin-nav button{font-size:.72rem!important;padding:9px 10px!important}}
 
 /* Keep checkout methods directly above the payment action. */
