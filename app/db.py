@@ -225,6 +225,7 @@ DONOR_COLORS = {
     "green": "Зелёный",
     "violet": "Фиолетовый",
 }
+DEFAULT_DONOR_NOTE = "Поддержал разработку"
 DONOR_COLOR_VALUES = {
     "red": "#e10620",
     "orange": "#ed6a24",
@@ -295,13 +296,14 @@ def record_donor_payment(nickname, amount):
     db.execute(
         """INSERT INTO donors(nickname, color, note, total_amount, donations_count,
            is_active, created_at, updated_at, last_donated_at)
-           VALUES (?, ?, '', ?, 1, 1, ?, ?, ?)
+           VALUES (?, ?, ?, ?, 1, 1, ?, ?, ?)
            ON CONFLICT(nickname) DO UPDATE SET
              total_amount = CAST(total_amount AS REAL) + CAST(excluded.total_amount AS REAL),
              donations_count = donations_count + 1,
+             note = CASE WHEN TRIM(COALESCE(donors.note, '')) = '' THEN excluded.note ELSE donors.note END,
              updated_at = excluded.updated_at,
              last_donated_at = excluded.last_donated_at""",
-        (nickname, color, str(amount), now, now, now),
+        (nickname, color, DEFAULT_DONOR_NOTE, str(amount), now, now, now),
     )
     db.commit()
 

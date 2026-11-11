@@ -44,7 +44,7 @@
       <div class="cyber-donor-copy">
         {% if donor.social_url %}<a class="donor-name" href="{{ donor.social_url }}" target="_blank" rel="noopener noreferrer nofollow">{{ donor.nickname }}</a>{% else %}<strong class="donor-name">{{ donor.nickname }}</strong>{% endif %}
         <div class="cyber-donor-details"><span>{{ '{:,.2f}'.format(donor.total_amount|float).replace(',', ' ') }} ₽</span>{% if donor.last_donated_at %}<span aria-hidden="true">·</span><time datetime="{{ donor.last_donated_at }}">{{ donor.last_donated_at[:10].split('-')|reverse|join('.') }}</time>{% endif %}</div>
-        {% if donor.note %}<span class="cyber-donor-note">{{ donor.note }}</span>{% endif %}
+        <span class="cyber-donor-note">{{ donor.note or 'Поддержал разработку' }}</span>
       </div>
       <span class="cyber-donor-heart" aria-label="{{ 'Закреплённый донатер' if donor.pinned else 'Спасибо за поддержку' }}">{{ icon('heart',18) }}</span>
     </article>
