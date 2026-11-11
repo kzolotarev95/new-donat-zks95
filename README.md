@@ -2,5 +2,3 @@
 
 Production-ready персональный портал разработчика с GitHub API, приёмом поддержки.
 **Стек:** Flask 3 · SQLite (WAL) · Gunicorn · Nginx · systemd · SDK · GitHub Actions.
-
-[Финансовая панель: обновление, настройки, выписки, сверка и чеки НПД](docs/FINANCE.md).
